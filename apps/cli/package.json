@@ -1,0 +1,12 @@
+{
+  "name": "@wato/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@wato/api-contracts": "workspace:*",
+    "@wato/config": "workspace:*",
+    "@wato/ipc": "workspace:*",
+    "@wato/workflow-engine": "workspace:*"
+  }
+}

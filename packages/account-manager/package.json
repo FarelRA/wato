@@ -1,0 +1,11 @@
+{
+  "name": "@wato/account-manager",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@wato/sdk": "workspace:*"
+  }
+}

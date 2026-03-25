@@ -1,0 +1,22 @@
+{
+  "name": "@wato/daemon",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@wato/account-manager": "workspace:*",
+    "@wato/config": "workspace:*",
+    "@wato/kernel": "workspace:*",
+    "@wato/logging": "workspace:*",
+    "@wato/sdk": "workspace:*",
+    "@wato/workflow-engine": "workspace:*",
+    "@wato/action-send-message": "workspace:*",
+    "@wato/api-server": "workspace:*",
+    "@wato/health-monitor": "workspace:*",
+    "@wato/storage-archive": "workspace:*",
+    "@wato/trigger-message": "workspace:*",
+    "@wato/webhook-runtime": "workspace:*",
+    "@wato/whatsapp-core": "workspace:*",
+    "@wato/workflow-core": "workspace:*"
+  }
+}

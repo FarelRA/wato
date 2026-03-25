@@ -1,0 +1,16 @@
+{
+  "name": "@wato/kernel",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@wato/account-manager": "workspace:*",
+    "@wato/event-bus": "workspace:*",
+    "@wato/module-loader": "workspace:*",
+    "@wato/sdk": "workspace:*",
+    "@wato/storage-sqlite": "workspace:*",
+    "@wato/workflow-engine": "workspace:*"
+  }
+}
