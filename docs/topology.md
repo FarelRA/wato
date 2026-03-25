@@ -11,30 +11,33 @@ packages/
   api-client/
   api-types/
   config/
+  core/
   event-bus/
   kernel/
   logging/
   module-graph/
-  core/
   storage-sqlite/
   workflow-engine/
   workflow-types/
 modules/
-  action-message/
   action-data/
+  action-message/
   runtime-api/
   runtime-health/
   runtime-webhook/
   runtime-whatsapp/
   runtime-workflow/
   trigger-message/
+docs/
 ```
 
 ## Apps
 
 ### `apps/daemon`
 
-Boots the kernel and loads the runtime module graph:
+Boots the kernel and loads the runtime module graph.
+
+Default runtime load order:
 
 - `runtime-whatsapp`
 - `runtime-workflow`
@@ -47,77 +50,78 @@ Boots the kernel and loads the runtime module graph:
 
 ### `apps/cli`
 
-Thin operator client that reads config, creates an API client, and calls daemon endpoints.
+Thin operator client that reads config, builds the API client, and calls the daemon API.
 
 ## Packages
 
 ### `packages/core`
 
-Core shared contracts:
+Shared runtime contracts:
 
-- module and kernel types
-- event types
-- storage capability
-- workflow registry capability
-- WhatsApp gateway capability
+- kernel and module types
+- event and capability types
+- storage interfaces
+- workflow registry interfaces
+- WhatsApp gateway interfaces
+- API key and send-request shared shapes
 
 ### `packages/kernel`
 
-Kernel orchestration, lifecycle management, and capability registry.
+Kernel lifecycle orchestration, capability registry, startup/shutdown, status, and reload wiring.
 
 ### `packages/config`
 
-Config loading, env merges, defaults, and schema validation.
+Config loading, env merges, defaults, and zod-backed validation.
 
 ### `packages/event-bus`
 
-Event subscription and publish plumbing.
+Event publish/subscribe plumbing.
 
 ### `packages/account-registry`
 
-Account state and capability wiring.
+Account records, in-memory state tracking, QR/error updates, and registry capability wiring.
 
 ### `packages/module-graph`
 
-Module boot and dependency ordering support.
+Module dependency validation and boot-order support.
 
 ### `packages/storage-sqlite`
 
-SQLite persistence implementation.
+SQLite implementation for operational metadata.
 
 ### `packages/api-types`
 
-Response and request DTOs used by the API client.
+Public API request/response DTO families and shared surface shapes.
 
 ### `packages/api-client`
 
-Local API client used by the CLI.
+Bearer-authenticated local API client used by the CLI.
 
 ### `packages/workflow-types`
 
-Workflow types, provider contracts, and workflow config interpolation helpers.
+Workflow types, provider contracts, interpolation helpers, and workflow-side shared shapes.
 
 ### `packages/workflow-engine`
 
-Workflow execution and validation engine.
+Workflow validation, trigger matching, condition evaluation, action execution, and execution persistence.
 
 ## Modules
 
 ### `modules/runtime-whatsapp`
 
-Owns WhatsApp Web integration and exposes the typed gateway.
+Owns WhatsApp Web integration, account session initialization, event normalization, and the typed gateway.
 
 ### `modules/runtime-workflow`
 
-Loads workflows, registers base conditions, exposes workflow registry capability, and evaluates workflows for inbound events.
+Loads workflows from config/storage, registers workflow providers, exposes the workflow registry capability, and evaluates workflows for inbound events.
 
 ### `modules/trigger-message`
 
-Provides the `message.received` workflow trigger and extracts structured trigger data from message payloads.
+Provides the `message.received` workflow trigger and extracts structured command/regex/message metadata.
 
 ### `modules/action-data`
 
-Provides pure workflow utility actions such as:
+Provides utility workflow actions:
 
 - `data.set`
 - `data.coalesce`
@@ -129,34 +133,61 @@ Provides workflow actions that call the WhatsApp gateway.
 
 ### `modules/runtime-webhook`
 
-Persists webhook endpoints, delivers outbound webhooks, retries failures, and supports replay.
+Stores webhook definitions, signs/delivers outbound webhooks, retries failed deliveries, and supports replay/test flows.
 
 ### `modules/runtime-api`
 
-Exposes the Bun HTTP control plane.
+Exposes the local `/v1` HTTP control plane and maps public routes to kernel capabilities.
 
 ### `modules/runtime-health`
 
-Health and readiness support.
+Provides runtime health/readiness capability support.
 
 ## Capability topology
 
-Important capabilities in the runtime:
+Important runtime capabilities:
 
 - `account-registry`
 - `workflow-engine`
+- `workflow-registry`
 - `storage-engine`
 - `message-sender`
 - `system-controller`
 - `whatsapp-gateway`
 - `webhook-registry`
-- `workflow-registry`
+- `api-router`
+- `health-checks`
+
+## Public topology
+
+### CLI groups
+
+- `system`
+- `account`
+- `chat`
+- `message`
+- `group`
+- `channel`
+- `contact`
+- `label`
+- `broadcast`
+- `workflow`
+- `webhook`
+
+### HTTP API base
+
+- `/v1`
+
+### Auth
+
+- `Authorization: Bearer <key>`
 
 ## Data topology
 
 ### Session state
 
-- account auth/session data lives under `data/accounts/<accountId>/session` by default
+- default account session path: `data/accounts/<accountId>/session`
+- optional override: `accounts[].sessionDir`
 
 ### Build outputs
 
@@ -165,5 +196,15 @@ Important capabilities in the runtime:
 
 ### Runtime stores
 
-- SQLite metadata under the configured data directory
-- media archives under the same data root when media archival is enabled
+- SQLite metadata under the configured `dataDir`
+- media archives under the same root when media archival is enabled
+
+### SQLite metadata families
+
+- account records
+- API key records
+- domain events
+- workflow definitions
+- workflow execution records
+- webhook definitions
+- webhook delivery records

@@ -290,7 +290,7 @@ bun run dev:cli -- workflow test
 Then upsert your full workflow:
 
 ```bash
-bun run dev:cli -- workflow upsert '<json>'
+bun run dev:cli -- workflow upsert --json '{"id":"hello-auto-reply","name":"Hello Auto Reply","version":1,"enabled":true,"accountScope":{"mode":"all"},"trigger":{"type":"message.received","config":{"contains":"hello"}},"conditions":[],"actions":[{"type":"message.sendText","config":{"chatId":"${input.chatId}","text":"hello back"}}]}'
 ```
 
 ## Design tips

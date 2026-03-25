@@ -3,7 +3,9 @@ import path from "node:path";
 import { Database } from "bun:sqlite";
 import type {
   AccountRecord,
+  ApiKeyRecord,
   DomainEvent,
+  StoredApiKeyRecord,
   StorageEngine,
   WebhookDefinition,
   WebhookDeliveryRecord,
@@ -84,6 +86,58 @@ export class SqliteStorageEngine implements StorageEngine {
       correlationId: row.correlation_id ? String(row.correlation_id) : undefined,
       payload: JSON.parse(String(row.payload_json))
     };
+  }
+
+  saveApiKey(record: StoredApiKeyRecord): void {
+    this.db
+      .query(
+        `insert into api_keys (id, name, key_hash, enabled, permissions_json, source, created_at, updated_at, expires_at, last_used_at)
+         values ($id, $name, $keyHash, $enabled, $permissionsJson, $source, $createdAt, $updatedAt, $expiresAt, $lastUsedAt)
+         on conflict(id) do update set
+           name = excluded.name,
+           key_hash = excluded.key_hash,
+           enabled = excluded.enabled,
+           permissions_json = excluded.permissions_json,
+           source = excluded.source,
+           updated_at = excluded.updated_at,
+           expires_at = excluded.expires_at,
+           last_used_at = excluded.last_used_at`
+      )
+      .run({
+        id: record.id,
+        name: record.name,
+        keyHash: record.keyHash,
+        enabled: record.enabled ? 1 : 0,
+        permissionsJson: JSON.stringify(record.permissions),
+        source: record.source,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+        expiresAt: record.expiresAt ?? null,
+        lastUsedAt: record.lastUsedAt ?? null
+      });
+  }
+
+  getApiKey(apiKeyId: string): StoredApiKeyRecord | undefined {
+    const row = this.db.query(`select * from api_keys where id = ? limit 1`).get(apiKeyId) as Record<string, unknown> | null;
+    return row ? this.toStoredApiKeyRecord(row) : undefined;
+  }
+
+  getApiKeyByHash(keyHash: string): StoredApiKeyRecord | undefined {
+    const row = this.db.query(`select * from api_keys where key_hash = ? limit 1`).get(keyHash) as Record<string, unknown> | null;
+    return row ? this.toStoredApiKeyRecord(row) : undefined;
+  }
+
+  listApiKeys(): ApiKeyRecord[] {
+    const rows = this.db.query(`select * from api_keys order by created_at asc`).all() as Record<string, unknown>[];
+    return rows.map((row) => this.toApiKeyRecord(row));
+  }
+
+  deleteApiKey(apiKeyId: string): void {
+    this.db.query(`delete from api_keys where id = ?`).run(apiKeyId);
+  }
+
+  touchApiKey(apiKeyId: string, lastUsedAt: string): void {
+    this.db.query(`update api_keys set last_used_at = ?, updated_at = ? where id = ?`).run(lastUsedAt, lastUsedAt, apiKeyId);
   }
 
   saveWorkflow(workflow: unknown): void {
@@ -281,6 +335,19 @@ export class SqliteStorageEngine implements StorageEngine {
         payload_json text not null
       );
 
+      create table if not exists api_keys (
+        id text primary key,
+        name text not null,
+        key_hash text not null unique,
+        enabled integer not null,
+        permissions_json text not null,
+        source text not null,
+        created_at text not null,
+        updated_at text not null,
+        expires_at text,
+        last_used_at text
+      );
+
       create table if not exists workflows (
         id text primary key,
         version integer not null,
@@ -328,5 +395,26 @@ export class SqliteStorageEngine implements StorageEngine {
       );
 
     `);
+  }
+
+  private toApiKeyRecord(row: Record<string, unknown>): ApiKeyRecord {
+    return {
+      id: String(row.id),
+      name: String(row.name),
+      enabled: Boolean(row.enabled),
+      permissions: JSON.parse(String(row.permissions_json)) as string[],
+      source: String(row.source) as "config" | "managed",
+      createdAt: String(row.created_at),
+      updatedAt: String(row.updated_at),
+      expiresAt: row.expires_at ? String(row.expires_at) : undefined,
+      lastUsedAt: row.last_used_at ? String(row.last_used_at) : undefined
+    };
+  }
+
+  private toStoredApiKeyRecord(row: Record<string, unknown>): StoredApiKeyRecord {
+    return {
+      ...this.toApiKeyRecord(row),
+      keyHash: String(row.key_hash)
+    };
   }
 }

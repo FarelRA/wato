@@ -1,8 +1,7 @@
 import path from "node:path";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import {
   Client,
-  LocalAuth,
   Location,
   MessageMedia,
   Poll,
@@ -89,6 +88,49 @@ import {
 type WhatsAppClientMap = Map<string, Client>;
 type BrowserClient = Client & { pupPage?: { evaluate: <T>(fn: (...args: never[]) => T | Promise<T>, ...args: unknown[]) => Promise<T> } };
 type MessageIdAliasMap = Map<string, string>;
+type ClientWithPuppeteerOptions = Client & { options: { puppeteer: Record<string, unknown> } };
+
+class SessionDirectoryAuth {
+  private client?: ClientWithPuppeteerOptions;
+
+  constructor(private readonly sessionDir: string) {}
+
+  setup(client: Client): void {
+    this.client = client as ClientWithPuppeteerOptions;
+  }
+
+  async beforeBrowserInitialized(): Promise<void> {
+    if (!this.client) {
+      throw new Error("SessionDirectoryAuth client not initialized");
+    }
+
+    const puppeteerOptions = this.client.options.puppeteer ?? {};
+    const existingUserDataDir = typeof puppeteerOptions.userDataDir === "string" ? puppeteerOptions.userDataDir : undefined;
+
+    if (existingUserDataDir && path.resolve(existingUserDataDir) !== this.sessionDir) {
+      throw new Error("SessionDirectoryAuth is not compatible with a user-supplied userDataDir.");
+    }
+
+    await mkdir(this.sessionDir, { recursive: true });
+    this.client.options.puppeteer = {
+      ...puppeteerOptions,
+      userDataDir: this.sessionDir
+    };
+  }
+
+  async logout(): Promise<void> {
+    await rm(this.sessionDir, { recursive: true, force: true });
+  }
+
+  async afterBrowserInitialized(): Promise<void> {}
+  async onAuthenticationNeeded(): Promise<{ failed: boolean; restart: boolean; failureEventPayload: undefined }> {
+    return { failed: false, restart: false, failureEventPayload: undefined };
+  }
+  async getAuthEventPayload(): Promise<void> {}
+  async afterAuthReady(): Promise<void> {}
+  async disconnect(): Promise<void> {}
+  async destroy(): Promise<void> {}
+}
 
 export const runtimeWhatsAppModule: WatoModule = {
   manifest: {
@@ -104,6 +146,10 @@ export const runtimeWhatsAppModule: WatoModule = {
     const messageIdAliases: MessageIdAliasMap = new Map();
 
     const gateway: WhatsAppGateway = {
+      getMessage: async (request) => {
+        const message = await getMessage(clients, storage, messageIdAliases, request.accountId, request.messageId);
+        return normalizeMessage({ accountId: request.accountId, message, context });
+      },
       sendText: async (request) => {
         const client = getClient(clients, request.accountId);
         const sent = await client.sendMessage(request.chatId, request.text, buildSendOptions(request));
@@ -553,6 +599,10 @@ export const runtimeWhatsAppModule: WatoModule = {
         const client = getClient(clients, request.accountId);
         return client.createChannel(request.title, request.description ? { description: request.description } : undefined);
       },
+      getChannel: async (request) => {
+        const channel = await getChannel(clients, request.accountId, request.channelId);
+        return toChannelSummary(channel);
+      },
       listChannels: async (request) => {
         const client = getClient(clients, request.accountId);
         const channels = await client.getChannels();
@@ -673,11 +723,11 @@ export const runtimeWhatsAppModule: WatoModule = {
           }
 
           try {
-            const sessionPath = path.join(context.config.dataDir, "accounts", account.id, "session");
+            const sessionPath = resolveSessionDir(context.config.dataDir, account.id, account.sessionDir);
             await mkdir(sessionPath, { recursive: true });
             await mkdir(path.join(context.config.dataDir, "accounts", account.id, "media"), { recursive: true });
             const client = new Client({
-              authStrategy: new LocalAuth({ clientId: account.id, dataPath: sessionPath }),
+              authStrategy: new SessionDirectoryAuth(sessionPath),
               puppeteer: {
                 headless: context.config.whatsapp.headless,
                 executablePath: context.config.whatsapp.browserPath,
@@ -736,6 +786,14 @@ async function initializeClient(input: {
     storage.upsertAccounts(accountRegistry.list());
     context.logger.error("whatsapp client initialization failed", { accountId, error });
   }
+}
+
+function resolveSessionDir(dataDir: string, accountId: string, sessionDir?: string): string {
+  if (!sessionDir) {
+    return path.resolve(dataDir, "accounts", accountId, "session");
+  }
+
+  return path.isAbsolute(sessionDir) ? sessionDir : path.resolve(dataDir, sessionDir);
 }
 
 async function requestPairingCode(client: Client, request: AccountPairingCodeRequest): Promise<string> {
@@ -953,57 +1011,58 @@ function wireClientEvents(input: {
   storage: StorageEngine;
 }): void {
   const { accountId, client, context, accountRegistry, storage } = input;
+  const onClientEvent = createClientEventHandler(accountId, context);
 
-  client.on("qr", async (qr) => {
+  client.on("qr", onClientEvent("qr", async (qr) => {
     accountRegistry.updateState(accountId, "qr_required");
     accountRegistry.setQrCode(accountId, qr);
     storage.upsertAccounts(accountRegistry.list());
     await context.events.publish(createDomainEvent({ type: "account.qr", sourceModule: "runtime-whatsapp", accountId, payload: { accountId, qr } }));
-  });
+  }));
 
-  client.on("authenticated", async () => {
+  client.on("authenticated", onClientEvent("authenticated", async () => {
     accountRegistry.updateState(accountId, "authenticating");
     accountRegistry.setLastError(accountId, undefined);
     storage.upsertAccounts(accountRegistry.list());
-  });
+  }));
 
-  client.on("ready", async () => {
+  client.on("ready", onClientEvent("ready", async () => {
     accountRegistry.updateState(accountId, "ready");
     accountRegistry.setQrCode(accountId, undefined);
     accountRegistry.touch(accountId);
     storage.upsertAccounts(accountRegistry.list());
     await context.events.publish(createDomainEvent({ type: "account.ready", sourceModule: "runtime-whatsapp", accountId, payload: { accountId, multiDevice: true } }));
-  });
+  }));
 
-  client.on("message", async (message) => {
+  client.on("message", onClientEvent("message", async (message) => {
     const normalized = await normalizeMessage({ accountId, message, context });
     accountRegistry.touch(accountId);
     storage.upsertAccounts(accountRegistry.list());
     await context.events.publish(createDomainEvent({ type: "message.received", sourceModule: "runtime-whatsapp", accountId, payload: normalized }));
-  });
+  }));
 
-  client.on("message_create", async (message) => {
+  client.on("message_create", onClientEvent("message_create", async (message) => {
     const normalized = await normalizeMessage({ accountId, message, context });
     await context.events.publish(createDomainEvent({ type: "message.created", sourceModule: "runtime-whatsapp", accountId, payload: normalized }));
-  });
+  }));
 
-  client.on("message_ack", async (message, ack) => {
+  client.on("message_ack", onClientEvent("message_ack", async (message, ack) => {
     await context.events.publish(createDomainEvent({ type: "message.ack", sourceModule: "runtime-whatsapp", accountId, payload: { accountId, messageId: message.id.id, ack } }));
-  });
+  }));
 
-  client.on("message_edit", async (message, newBody, prevBody) => {
+  client.on("message_edit", onClientEvent("message_edit", async (message, newBody, prevBody) => {
     await context.events.publish(createDomainEvent({ type: "message.edit", sourceModule: "runtime-whatsapp", accountId, payload: { accountId, messageId: message.id.id, newBody, prevBody } }));
-  });
+  }));
 
-  client.on("message_revoke_everyone", async (after, before) => {
+  client.on("message_revoke_everyone", onClientEvent("message_revoke_everyone", async (after, before) => {
     await context.events.publish(createDomainEvent({ type: "message.revoke_everyone", sourceModule: "runtime-whatsapp", accountId, payload: { accountId, after: after?.id.id, before: before?.id.id } }));
-  });
+  }));
 
-  client.on("message_revoke_me", async (message) => {
+  client.on("message_revoke_me", onClientEvent("message_revoke_me", async (message) => {
     await context.events.publish(createDomainEvent({ type: "message.revoke_me", sourceModule: "runtime-whatsapp", accountId, payload: { accountId, messageId: message.id.id } }));
-  });
+  }));
 
-  client.on("message_reaction", async (reaction) => {
+  client.on("message_reaction", onClientEvent("message_reaction", async (reaction) => {
     await context.events.publish(
       createDomainEvent({
         type: "message.reaction",
@@ -1018,9 +1077,9 @@ function wireClientEvents(input: {
         }
       })
     );
-  });
+  }));
 
-  client.on("vote_update", async (vote) => {
+  client.on("vote_update", onClientEvent("vote_update", async (vote) => {
     await context.events.publish(
       createDomainEvent({
         type: "poll.vote",
@@ -1035,65 +1094,82 @@ function wireClientEvents(input: {
         }
       })
     );
-  });
+  }));
 
-  client.on("group_join", async (notification) => {
+  client.on("group_join", onClientEvent("group_join", async (notification) => {
     await context.events.publish(createDomainEvent({ type: "group.join", sourceModule: "runtime-whatsapp", accountId, payload: notification }));
-  });
+  }));
 
-  client.on("group_leave", async (notification) => {
+  client.on("group_leave", onClientEvent("group_leave", async (notification) => {
     await context.events.publish(createDomainEvent({ type: "group.leave", sourceModule: "runtime-whatsapp", accountId, payload: notification }));
-  });
+  }));
 
-  client.on("group_admin_changed", async (notification) => {
+  client.on("group_admin_changed", onClientEvent("group_admin_changed", async (notification) => {
     await context.events.publish(createDomainEvent({ type: "group.admin_changed", sourceModule: "runtime-whatsapp", accountId, payload: notification }));
-  });
+  }));
 
-  client.on("group_membership_request", async (notification) => {
+  client.on("group_membership_request", onClientEvent("group_membership_request", async (notification) => {
     await context.events.publish(createDomainEvent({ type: "group.membership_request", sourceModule: "runtime-whatsapp", accountId, payload: notification }));
-  });
+  }));
 
-  client.on("group_update", async (notification) => {
+  client.on("group_update", onClientEvent("group_update", async (notification) => {
     await context.events.publish(createDomainEvent({ type: "group.update", sourceModule: "runtime-whatsapp", accountId, payload: notification }));
-  });
+  }));
 
-  client.on("chat_archived", async (chat, currState, prevState) => {
+  client.on("chat_archived", onClientEvent("chat_archived", async (chat, currState, prevState) => {
     await context.events.publish(createDomainEvent({ type: "chat.archived", sourceModule: "runtime-whatsapp", accountId, payload: { accountId, chatId: chat.id._serialized, currState, prevState } }));
-  });
+  }));
 
-  client.on("chat_removed", async (chat) => {
+  client.on("chat_removed", onClientEvent("chat_removed", async (chat) => {
     await context.events.publish(createDomainEvent({ type: "chat.removed", sourceModule: "runtime-whatsapp", accountId, payload: { accountId, chatId: chat.id._serialized } }));
-  });
+  }));
 
-  client.on("contact_changed", async (message, oldId, newId, isContact) => {
+  client.on("contact_changed", onClientEvent("contact_changed", async (message, oldId, newId, isContact) => {
     await context.events.publish(createDomainEvent({ type: "contact.changed", sourceModule: "runtime-whatsapp", accountId, payload: { accountId, messageId: message.id.id, oldId, newId, isContact } }));
-  });
+  }));
 
-  client.on("incoming_call", async (call) => {
+  client.on("incoming_call", onClientEvent("incoming_call", async (call) => {
     await context.events.publish(createDomainEvent({ type: "call.incoming", sourceModule: "runtime-whatsapp", accountId, payload: call }));
-  });
+  }));
 
-  client.on("media_uploaded", async (message) => {
+  client.on("media_uploaded", onClientEvent("media_uploaded", async (message) => {
     await context.events.publish(createDomainEvent({ type: "message.media_uploaded", sourceModule: "runtime-whatsapp", accountId, payload: { accountId, messageId: message.id.id } }));
-  });
+  }));
 
-  client.on("auth_failure", async (message) => {
+  client.on("auth_failure", onClientEvent("auth_failure", async (message) => {
     accountRegistry.updateState(accountId, "failed");
     accountRegistry.setLastError(accountId, message);
     storage.upsertAccounts(accountRegistry.list());
     await context.events.publish(createDomainEvent({ type: "account.auth_failure", sourceModule: "runtime-whatsapp", accountId, payload: { accountId, message } }));
-  });
+  }));
 
-  client.on("disconnected", async (reason) => {
+  client.on("disconnected", onClientEvent("disconnected", async (reason) => {
     accountRegistry.updateState(accountId, "disconnected");
     accountRegistry.setLastError(accountId, String(reason));
     storage.upsertAccounts(accountRegistry.list());
     await context.events.publish(createDomainEvent({ type: "account.disconnected", sourceModule: "runtime-whatsapp", accountId, payload: { accountId, reason: String(reason) } }));
-  });
+  }));
 
-  client.on("change_state", async (state) => {
+  client.on("change_state", onClientEvent("change_state", async (state) => {
     await context.events.publish(createDomainEvent({ type: "account.state_changed", sourceModule: "runtime-whatsapp", accountId, payload: { accountId, state } }));
-  });
+  }));
+}
+
+function createClientEventHandler(
+  accountId: string,
+  context: Parameters<WatoModule["register"]>[0]
+): <TArgs extends unknown[]>(eventName: string, handler: (...args: TArgs) => Promise<void>) => (...args: TArgs) => void {
+  return (eventName, handler) => {
+    return (...args) => {
+      void handler(...args).catch((error) => {
+        context.logger.error("whatsapp client event failed", {
+          accountId,
+          eventName,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      });
+    };
+  };
 }
 
 async function normalizeMessage(input: { accountId: string; message: Message; context: Parameters<WatoModule["register"]>[0] }): Promise<MessageEnvelope> {

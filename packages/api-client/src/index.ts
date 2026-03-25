@@ -1,23 +1,13 @@
 import type {
-  AccountListResponse,
-  MessageListResponse,
-  SendMessageBody,
-  SystemStatusResponse,
-  WebhookDeliveryListResponse,
-  WebhookListResponse,
-  WorkflowExecutionListResponse,
-   WorkflowListResponse,
-   WorkflowProviderTypesResponse,
-   WorkflowTestBody,
-   WorkflowValidationResponse
-} from "@wato/api-types";
-import type {
   AccountAutoDownloadRequest,
   AccountDisplayNameRequest,
   AccountPairingCodeRequest,
   AccountProfilePictureRequest,
   AddressBookContactDeleteRequest,
   AddressBookContactUpsertRequest,
+  ApiKeyCreateRequest,
+  ApiKeyRotateRequest,
+  ApiKeyUpdateRequest,
   CallLinkRequest,
   ChannelActionRequest,
   ChannelAdminInviteRequest,
@@ -25,124 +15,157 @@ import type {
   ChannelInviteRequest,
   ChannelMessagesRequest,
   ChannelOwnershipRequest,
-  ChannelSendRequest,
   ChannelSubscribersRequest,
-  ChannelSubscriptionRequest,
   ChannelUpdateRequest,
   ChatActionRequest,
   ChatMuteRequest,
   ContactActionRequest,
-  CreatePollRequest,
-  DeleteMessageRequest,
-  EditMessageRequest,
-  FetchChatMessagesRequest,
-  ForwardMessageRequest,
   GroupCreateRequest,
   GroupInviteRequest,
   GroupLeaveRequest,
   GroupMembershipRequest,
-  GroupV4InviteRequest,
   GroupParticipantsRequest,
   GroupSettingsRequest,
+  GroupV4InviteRequest,
   JoinGroupInviteRequest,
+  KernelConfig,
   MessageActionRequest,
   PinMessageRequest,
   ReactToMessageRequest,
   ReplyToMessageRequest,
   SearchMessagesRequest,
-  SendContactCardsRequest,
-  SendLocationRequest,
-  SendMediaRequest,
   StatusRevokeRequest,
-  VotePollRequest,
-  KernelConfig
+  UnifiedChannelSendRequest,
+  UnifiedMessageSendRequest
 } from "@wato/core";
+import type {
+  AccountListResponse,
+  ApiKeyListResponse,
+  BroadcastListResponse,
+  ChannelListResponse,
+  ChatListResponse,
+  ContactListResponse,
+  LabelListResponse,
+  MessageListResponse,
+  SystemStatusResponse,
+  WebhookDeliveryListResponse,
+  WebhookListResponse,
+  WorkflowExecutionListResponse,
+  WorkflowListResponse,
+  WorkflowProviderTypesResponse,
+  WorkflowTestBody,
+  WorkflowValidationResponse
+} from "@wato/api-types";
 
 export interface ApiClient {
   systemStatus(): Promise<SystemStatusResponse>;
+  reloadSystem(): Promise<{ ok: true }>;
+  apiKeys(): Promise<ApiKeyListResponse>;
+  getApiKey(apiKeyId: string): Promise<{ apiKey: import("@wato/core").ApiKeyRecord }>;
+  createApiKey(body: ApiKeyCreateRequest): Promise<{ apiKey: import("@wato/core").ApiKeyRecord; key: string }>;
+  updateApiKey(apiKeyId: string, body: Omit<ApiKeyUpdateRequest, "apiKeyId">): Promise<{ apiKey: import("@wato/core").ApiKeyRecord }>;
+  rotateApiKey(body: ApiKeyRotateRequest): Promise<{ apiKey: import("@wato/core").ApiKeyRecord; key: string }>;
+  deleteApiKey(apiKeyId: string): Promise<{ ok: true }>;
   accounts(): Promise<AccountListResponse>;
-  workflows(): Promise<WorkflowListResponse>;
-  workflowProviders(): Promise<WorkflowProviderTypesResponse>;
-  validateWorkflow(body: Record<string, unknown>): Promise<WorkflowValidationResponse>;
-  upsertWorkflow(body: Record<string, unknown>): Promise<{ ok: true }>;
-  testWorkflow(body: WorkflowTestBody): Promise<unknown>;
-  workflowExecutions(): Promise<WorkflowExecutionListResponse>;
-  webhooks(): Promise<WebhookListResponse>;
-  webhookDeliveries(): Promise<WebhookDeliveryListResponse>;
-  upsertWebhook(body: { id: string; url: string; secret?: string; enabled?: boolean; eventTypes?: string[]; accountIds?: string[]; headers?: Record<string, string> }): Promise<{ ok: true }>;
-  removeWebhook(body: { webhookId: string }): Promise<{ ok: true }>;
-  replayWebhookDelivery(body: { deliveryId: string }): Promise<{ ok: true }>;
-  testWebhookEvent(body: { eventType: string; accountId?: string; payload?: unknown }): Promise<{ ok: true }>;
+  getAccount(accountId: string): Promise<{ account: import("@wato/core").AccountRecord }>;
+  loginQr(accountId: string): Promise<{ account: import("@wato/core").AccountRecord; qrCode?: string }>;
+  pairingCode(body: AccountPairingCodeRequest): Promise<{ pairingCode: string }>;
+  setStatus(body: { accountId: string; status: string }): Promise<{ ok: true }>;
+  revokeStatusMessage(body: StatusRevokeRequest): Promise<{ ok: true }>;
+  setDisplayName(body: AccountDisplayNameRequest): Promise<{ ok: boolean }>;
+  setProfilePicture(body: AccountProfilePictureRequest): Promise<{ ok: boolean }>;
+  deleteProfilePicture(accountId: string): Promise<{ ok: boolean }>;
+  presenceSet(body: { accountId: string; presence: "available" | "unavailable" }): Promise<{ ok: true }>;
+  accountState(accountId: string): Promise<{ state: string }>;
+  accountVersion(accountId: string): Promise<{ version: string }>;
+  autoDownload(body: AccountAutoDownloadRequest): Promise<{ ok: true }>;
+  callLink(body: CallLinkRequest): Promise<{ url: string }>;
   messages(accountId?: string): Promise<MessageListResponse>;
-  sendMessage(body: SendMessageBody): Promise<{ ok: true }>;
-  sendMedia(body: SendMediaRequest): Promise<{ messageId?: string }>;
-  sendContacts(body: SendContactCardsRequest): Promise<{ messageId?: string }>;
-  sendLocation(body: SendLocationRequest): Promise<{ messageId?: string }>;
+  getMessage(body: MessageActionRequest): Promise<{ message: import("@wato/core").MessageEnvelope }>;
+  sendMessage(body: UnifiedMessageSendRequest): Promise<{ messageId?: string }>;
   reply(body: ReplyToMessageRequest): Promise<{ messageId?: string }>;
-  forward(body: ForwardMessageRequest): Promise<{ ok: true }>;
-  editMessage(body: EditMessageRequest): Promise<{ messageId?: string } | null>;
-  deleteMessage(body: DeleteMessageRequest): Promise<{ ok: true }>;
+  forward(body: import("@wato/core").ForwardMessageRequest): Promise<{ ok: true }>;
+  editMessage(body: import("@wato/core").EditMessageRequest): Promise<{ messageId?: string } | null>;
+  deleteMessage(body: import("@wato/core").DeleteMessageRequest): Promise<{ ok: true }>;
+  react(body: ReactToMessageRequest): Promise<{ ok: true }>;
+  messageReactions(body: MessageActionRequest): Promise<unknown>;
+  messagePollVotes(body: MessageActionRequest): Promise<unknown>;
   starMessage(body: MessageActionRequest): Promise<{ ok: true }>;
   unstarMessage(body: MessageActionRequest): Promise<{ ok: true }>;
   pinMessage(body: PinMessageRequest): Promise<{ ok: boolean }>;
   unpinMessage(body: MessageActionRequest): Promise<{ ok: boolean }>;
-  messageInfo(body: MessageActionRequest): Promise<unknown>;
-  messageReactions(body: MessageActionRequest): Promise<unknown>;
-  messagePollVotes(body: MessageActionRequest): Promise<unknown>;
-  react(body: ReactToMessageRequest): Promise<{ ok: true }>;
-  createPoll(body: CreatePollRequest): Promise<{ messageId?: string }>;
-  votePoll(body: VotePollRequest): Promise<{ ok: true }>;
-  labels(accountId: string): Promise<{ labels: unknown[] }>;
-  labelInfo(body: { accountId: string; labelId: string }): Promise<unknown>;
-  chatsByLabel(body: { accountId: string; labelId: string }): Promise<{ chats: unknown[] }>;
-  chatLabels(body: ChatActionRequest): Promise<{ labels: unknown[] }>;
-  updateChatLabels(body: { accountId: string; chatIds: string[]; labelIds: Array<string | number> }): Promise<{ ok: true }>;
-  broadcasts(accountId: string): Promise<{ broadcasts: unknown[] }>;
-  broadcastInfo(body: { accountId: string; broadcastId: string }): Promise<unknown>;
-  chats(accountId: string): Promise<{ chats: unknown[] }>;
+  votePoll(body: { accountId: string; messageId: string; selectedOptions: string[] }): Promise<{ ok: true }>;
+  respondScheduledEvent(body: { accountId: string; eventMessageId: string; response: number }): Promise<{ ok: boolean }>;
+  chats(accountId: string): Promise<ChatListResponse>;
   chatInfo(body: ChatActionRequest): Promise<unknown>;
-  chatMessages(body: FetchChatMessagesRequest): Promise<MessageListResponse>;
+  chatMessages(body: import("@wato/core").FetchChatMessagesRequest): Promise<MessageListResponse>;
   chatSearchMessages(body: SearchMessagesRequest): Promise<MessageListResponse>;
   archiveChat(body: ChatActionRequest): Promise<{ ok: boolean }>;
   unarchiveChat(body: ChatActionRequest): Promise<{ ok: boolean }>;
   pinChat(body: ChatActionRequest): Promise<{ ok: boolean }>;
   unpinChat(body: ChatActionRequest): Promise<{ ok: boolean }>;
+  muteChat(body: ChatMuteRequest): Promise<unknown>;
+  unmuteChat(body: ChatActionRequest): Promise<unknown>;
   markChatUnread(body: ChatActionRequest): Promise<{ ok: true }>;
   sendSeen(body: ChatActionRequest): Promise<{ ok: boolean }>;
-  sendTyping(body: ChatActionRequest): Promise<{ ok: true }>;
-  sendRecording(body: ChatActionRequest): Promise<{ ok: true }>;
-  clearChatState(body: ChatActionRequest): Promise<{ ok: boolean }>;
+  sendTyping(body: ChatActionRequest, active: boolean): Promise<{ ok: true }>;
+  sendRecording(body: ChatActionRequest, active: boolean): Promise<{ ok: true }>;
   clearChatMessages(body: ChatActionRequest): Promise<{ ok: boolean }>;
   deleteChat(body: ChatActionRequest): Promise<{ ok: boolean }>;
   syncHistory(body: ChatActionRequest): Promise<{ ok: boolean }>;
+  createGroup(body: GroupCreateRequest): Promise<unknown>;
+  getGroupInfo(body: GroupInviteRequest): Promise<unknown>;
+  updateGroup(body: GroupSettingsRequest): Promise<Record<string, boolean>>;
+  leaveGroup(body: GroupLeaveRequest): Promise<{ ok: true }>;
   joinGroupByInvite(body: JoinGroupInviteRequest): Promise<{ groupId: string }>;
   getInviteInfo(body: { accountId: string; inviteCode: string }): Promise<unknown>;
   acceptGroupV4Invite(body: GroupV4InviteRequest): Promise<{ status: number }>;
-  createGroup(body: GroupCreateRequest): Promise<unknown>;
   getGroupInvite(body: GroupInviteRequest): Promise<{ inviteCode: string }>;
   revokeGroupInvite(body: GroupInviteRequest): Promise<{ ok: true }>;
-  getGroupInfo(body: GroupInviteRequest): Promise<unknown>;
-  leaveGroup(body: GroupLeaveRequest): Promise<{ ok: true }>;
   groupMembershipRequests(body: GroupInviteRequest): Promise<{ requests: unknown[] }>;
   approveGroupMembershipRequests(body: GroupMembershipRequest): Promise<{ results: unknown[] }>;
   rejectGroupMembershipRequests(body: GroupMembershipRequest): Promise<{ results: unknown[] }>;
-  updateGroup(body: GroupSettingsRequest): Promise<Record<string, boolean>>;
   addGroupParticipants(body: GroupParticipantsRequest): Promise<unknown>;
   kickGroupParticipants(body: GroupParticipantsRequest): Promise<unknown>;
-  promoteGroupParticipants(body: GroupParticipantsRequest): Promise<boolean>;
-  demoteGroupParticipants(body: GroupParticipantsRequest): Promise<boolean>;
-  muteChat(body: ChatMuteRequest): Promise<unknown>;
-  unmuteChat(body: ChatMuteRequest): Promise<unknown>;
+  promoteGroupParticipants(body: GroupParticipantsRequest): Promise<unknown>;
+  demoteGroupParticipants(body: GroupParticipantsRequest): Promise<unknown>;
+  listChannels(accountId: string): Promise<ChannelListResponse>;
+  searchChannels(body: import("@wato/core").ChannelSearchRequest): Promise<ChannelListResponse>;
+  createChannel(body: ChannelCreateRequest): Promise<unknown>;
+  getChannel(body: ChannelActionRequest): Promise<{ channel: import("@wato/core").ChannelSummary }>;
+  getChannelByInvite(body: ChannelInviteRequest): Promise<unknown>;
+  updateChannel(body: ChannelUpdateRequest): Promise<Record<string, boolean>>;
+  channelSubscribers(body: ChannelSubscribersRequest): Promise<{ subscribers: unknown[] }>;
+  channelMessages(body: ChannelMessagesRequest): Promise<MessageListResponse>;
+  sendChannelMessage(body: UnifiedChannelSendRequest): Promise<{ messageId?: string }>;
+  subscribeChannel(body: ChannelActionRequest): Promise<{ ok: boolean }>;
+  unsubscribeChannel(body: ChannelActionRequest): Promise<{ ok: boolean }>;
+  muteChannel(body: ChannelActionRequest): Promise<{ ok: boolean }>;
+  unmuteChannel(body: ChannelActionRequest): Promise<{ ok: boolean }>;
+  seenChannel(body: ChannelActionRequest): Promise<{ ok: boolean }>;
+  inviteChannelAdmin(body: ChannelAdminInviteRequest): Promise<{ ok: boolean }>;
+  acceptChannelAdminInvite(body: ChannelActionRequest): Promise<{ ok: boolean }>;
+  revokeChannelAdminInvite(body: ChannelAdminInviteRequest): Promise<{ ok: boolean }>;
+  demoteChannelAdmin(body: ChannelAdminInviteRequest): Promise<{ ok: boolean }>;
+  transferChannelOwnership(body: ChannelOwnershipRequest): Promise<{ ok: boolean }>;
+  deleteChannel(body: ChannelActionRequest): Promise<{ ok: boolean }>;
+  labels(accountId: string): Promise<LabelListResponse>;
+  labelInfo(body: { accountId: string; labelId: string }): Promise<unknown>;
+  chatsByLabel(body: { accountId: string; labelId: string }): Promise<{ chats: unknown[] }>;
+  chatLabels(body: ChatActionRequest): Promise<{ labels: unknown[] }>;
+  updateChatLabels(body: { accountId: string; chatIds: string[]; labelIds: Array<string | number> }): Promise<{ ok: true }>;
+  broadcasts(accountId: string): Promise<BroadcastListResponse>;
+  broadcastInfo(body: { accountId: string; broadcastId: string }): Promise<unknown>;
+  contacts(accountId: string): Promise<ContactListResponse>;
+  blockedContacts(accountId: string): Promise<ContactListResponse>;
+  contactInfo(body: ContactActionRequest): Promise<unknown>;
   blockContact(body: ContactActionRequest): Promise<{ ok: boolean }>;
   unblockContact(body: ContactActionRequest): Promise<{ ok: boolean }>;
-  contacts(accountId: string): Promise<{ contacts: unknown[] }>;
-  blockedContacts(accountId: string): Promise<{ contacts: unknown[] }>;
-  contactInfo(body: ContactActionRequest): Promise<unknown>;
   commonGroups(body: ContactActionRequest): Promise<{ groups: string[] }>;
-  formattedNumber(body: ContactActionRequest): Promise<{ formattedNumber: string }>;
-  countryCode(body: ContactActionRequest): Promise<{ countryCode: string }>;
-  isRegistered(body: ContactActionRequest): Promise<{ registered: boolean }>;
+  formattedNumber(body: { accountId: string; value: string }): Promise<{ formattedNumber: string }>;
+  countryCode(body: { accountId: string; value: string }): Promise<{ countryCode: string }>;
   numberId(body: { accountId: string; number: string }): Promise<{ numberId: string | null }>;
+  isRegistered(body: ContactActionRequest): Promise<{ registered: boolean }>;
   contactDeviceCount(body: ContactActionRequest): Promise<{ count: number }>;
   profilePicture(body: ContactActionRequest): Promise<{ url: string | null }>;
   saveAddressBookContact(body: AddressBookContactUpsertRequest): Promise<{ ok: true }>;
@@ -150,455 +173,205 @@ export interface ApiClient {
   contactLidPhone(body: { accountId: string; userIds: string[] }): Promise<{ records: Array<{ lid: string; pn: string }> }>;
   addCustomerNote(body: { accountId: string; userId: string; note: string }): Promise<{ ok: true }>;
   customerNote(body: { accountId: string; userId: string }): Promise<unknown>;
-  setStatus(body: { accountId: string; status: string }): Promise<{ ok: true }>;
-  revokeStatusMessage(body: StatusRevokeRequest): Promise<{ ok: true }>;
-  setDisplayName(body: AccountDisplayNameRequest): Promise<{ ok: boolean }>;
-  setProfilePicture(body: AccountProfilePictureRequest): Promise<{ ok: boolean }>;
-  deleteProfilePicture(body: { accountId: string }): Promise<{ ok: boolean }>;
-  pairingCode(body: AccountPairingCodeRequest): Promise<{ pairingCode: string }>;
-  presenceAvailable(body: { accountId: string }): Promise<{ ok: true }>;
-  presenceUnavailable(body: { accountId: string }): Promise<{ ok: true }>;
-  accountState(body: { accountId: string }): Promise<{ state: string }>;
-  accountVersion(body: { accountId: string }): Promise<{ version: string }>;
-  autoDownload(body: AccountAutoDownloadRequest): Promise<{ ok: true }>;
-  callLink(body: CallLinkRequest): Promise<{ url: string }>;
-  createScheduledEvent(body: { accountId: string; chatId: string; name: string; startTime: string; description?: string; endTime?: string; location?: string; callType?: string; isEventCanceled?: boolean; quotedMessageId?: string }): Promise<{ messageId?: string }>;
-  respondScheduledEvent(body: { accountId: string; response: number; eventMessageId: string }): Promise<{ ok: boolean }>;
-  createChannel(body: ChannelCreateRequest): Promise<unknown>;
-  listChannels(accountId: string): Promise<{ channels: unknown[] }>;
-  searchChannels(body: { accountId: string; searchText?: string; countryCodes?: string[]; skipSubscribedNewsletters?: boolean; view?: number; limit?: number }): Promise<{ channels: unknown[] }>;
-  getChannelByInvite(body: ChannelInviteRequest): Promise<unknown>;
-  updateChannel(body: ChannelUpdateRequest): Promise<Record<string, boolean>>;
-  channelSubscribers(body: ChannelSubscribersRequest): Promise<{ subscribers: unknown[] }>;
-  channelMessages(body: ChannelMessagesRequest): Promise<MessageListResponse>;
-  subscribeChannel(body: ChannelSubscriptionRequest): Promise<{ ok: boolean }>;
-  unsubscribeChannel(body: ChannelSubscriptionRequest): Promise<{ ok: boolean }>;
-  muteChannel(body: ChannelActionRequest): Promise<{ ok: boolean }>;
-  unmuteChannel(body: ChannelActionRequest): Promise<{ ok: boolean }>;
-  seenChannel(body: ChannelActionRequest): Promise<{ ok: boolean }>;
-  sendChannelMessage(body: ChannelSendRequest): Promise<{ messageId?: string }>;
-  inviteChannelAdmin(body: ChannelAdminInviteRequest): Promise<{ ok: boolean }>;
-  acceptChannelAdminInvite(body: ChannelActionRequest): Promise<{ ok: boolean }>;
-  revokeChannelAdminInvite(body: ChannelAdminInviteRequest): Promise<{ ok: boolean }>;
-  demoteChannelAdmin(body: ChannelAdminInviteRequest): Promise<{ ok: boolean }>;
-  transferChannelOwnership(body: ChannelOwnershipRequest): Promise<{ ok: boolean }>;
-  deleteChannel(body: ChannelActionRequest): Promise<{ ok: boolean }>;
+  workflows(): Promise<WorkflowListResponse>;
+  workflowProviders(): Promise<WorkflowProviderTypesResponse>;
+  workflowExecutions(): Promise<WorkflowExecutionListResponse>;
+  validateWorkflow(body: Record<string, unknown>): Promise<WorkflowValidationResponse>;
+  upsertWorkflow(body: Record<string, unknown>): Promise<{ ok: true }>;
+  testWorkflow(body: WorkflowTestBody): Promise<unknown>;
+  webhooks(): Promise<WebhookListResponse>;
+  webhookDeliveries(): Promise<WebhookDeliveryListResponse>;
+  upsertWebhook(body: { id: string; url: string; secret?: string; enabled?: boolean; eventTypes?: string[]; accountIds?: string[]; headers?: Record<string, string> }): Promise<{ ok: true }>;
+  removeWebhook(webhookId: string): Promise<{ ok: true }>;
+  replayWebhookDelivery(deliveryId: string): Promise<{ ok: true }>;
+  testWebhookEvent(body: { eventType: string; accountId?: string; payload?: unknown }): Promise<{ ok: true }>;
 }
 
-export function createApiClient(config: KernelConfig): ApiClient {
-  const baseUrl = `http://${config.api.host}:${config.api.port}`;
-  const headers = config.api.authToken ? { authorization: `Bearer ${config.api.authToken}` } : undefined;
+export function createApiClient(config: KernelConfig, options?: { signal?: AbortSignal }): ApiClient {
+  const baseUrl = `http://${config.api.host}:${config.api.port}/v1`;
+  const configuredApiKey = config.api.keys.find((item) => item.enabled !== false)?.key;
+  const headers = configuredApiKey ? { authorization: `Bearer ${configuredApiKey}` } : undefined;
+  const signal = options?.signal;
+  const accountPath = (accountId: string) => `${baseUrl}/accounts/${encode(accountId)}`;
+  const messagePath = (accountId: string, messageId: string) => `${accountPath(accountId)}/messages/${encode(messageId)}`;
+  const chatPath = (accountId: string, chatId: string) => `${accountPath(accountId)}/chats/${encode(chatId)}`;
+  const groupPath = (accountId: string, groupId: string) => `${accountPath(accountId)}/groups/${encode(groupId)}`;
+  const channelPath = (accountId: string, channelId: string) => `${accountPath(accountId)}/channels/${encode(channelId)}`;
+  const contactPath = (accountId: string, contactId: string) => `${accountPath(accountId)}/contacts/${encode(contactId)}`;
 
   return {
-    async systemStatus() {
-      return request<SystemStatusResponse>(`${baseUrl}/system/status`, headers);
-    },
-    async accounts() {
-      return request<AccountListResponse>(`${baseUrl}/accounts`, headers);
-    },
-    async workflows() {
-      return request<WorkflowListResponse>(`${baseUrl}/workflows`, headers);
-    },
-    async workflowProviders() {
-      return request<WorkflowProviderTypesResponse>(`${baseUrl}/workflow-providers`, headers);
-    },
-    async validateWorkflow(body) {
-      return post<WorkflowValidationResponse>(`${baseUrl}/workflows/validate`, headers, body);
-    },
-    async upsertWorkflow(body) {
-      return post(`${baseUrl}/workflows`, headers, body);
-    },
-    async testWorkflow(body) {
-      return post(`${baseUrl}/workflows/test`, headers, body);
-    },
-    async workflowExecutions() {
-      return request<WorkflowExecutionListResponse>(`${baseUrl}/workflow-executions`, headers);
-    },
-    async webhooks() {
-      return request<WebhookListResponse>(`${baseUrl}/webhooks`, headers);
-    },
-    async webhookDeliveries() {
-      return request<WebhookDeliveryListResponse>(`${baseUrl}/webhook-deliveries`, headers);
-    },
-    async upsertWebhook(body) {
-      return post(`${baseUrl}/webhooks`, headers, body);
-    },
-    async removeWebhook(body) {
-      return request(`${baseUrl}/webhooks`, headers, {
-        method: "DELETE",
-        body: JSON.stringify(body),
-        headers: { "content-type": "application/json", ...(headers ?? {}) }
-      });
-    },
-    async replayWebhookDelivery(body) {
-      return post(`${baseUrl}/webhooks/replay`, headers, body);
-    },
-    async testWebhookEvent(body) {
-      return post(`${baseUrl}/webhooks/test`, headers, body);
-    },
-    async messages(accountId?: string) {
-      const query = accountId ? `?accountId=${encodeURIComponent(accountId)}` : "";
-      return request<MessageListResponse>(`${baseUrl}/messages${query}`, headers);
-    },
-    async sendMessage(body) {
-      return request<{ ok: true }>(`${baseUrl}/messages/send`, headers, {
-        method: "POST",
-        body: JSON.stringify(body),
-        headers: { "content-type": "application/json", ...(headers ?? {}) }
-      });
-    },
-    async sendMedia(body) {
-      return post(`${baseUrl}/messages/send-media`, headers, body);
-    },
-    async sendContacts(body) {
-      return post(`${baseUrl}/messages/send-contacts`, headers, body);
-    },
-    async sendLocation(body) {
-      return post(`${baseUrl}/messages/send-location`, headers, body);
-    },
-    async reply(body) {
-      return post(`${baseUrl}/messages/reply`, headers, body);
-    },
-    async forward(body) {
-      return post(`${baseUrl}/messages/forward`, headers, body);
-    },
-    async editMessage(body) {
-      return post(`${baseUrl}/messages/edit`, headers, body);
-    },
-    async deleteMessage(body) {
-      return post(`${baseUrl}/messages/delete`, headers, body);
-    },
-    async starMessage(body) {
-      return post(`${baseUrl}/messages/star`, headers, body);
-    },
-    async unstarMessage(body) {
-      return post(`${baseUrl}/messages/unstar`, headers, body);
-    },
-    async pinMessage(body) {
-      return post(`${baseUrl}/messages/pin`, headers, body);
-    },
-    async unpinMessage(body) {
-      return post(`${baseUrl}/messages/unpin`, headers, body);
-    },
-    async messageInfo(body) {
-      return post(`${baseUrl}/messages/info`, headers, body);
-    },
-    async messageReactions(body) {
-      return post(`${baseUrl}/messages/reactions`, headers, body);
-    },
-    async messagePollVotes(body) {
-      return post(`${baseUrl}/messages/polls/votes`, headers, body);
-    },
-    async react(body) {
-      return post(`${baseUrl}/messages/react`, headers, body);
-    },
-    async createPoll(body) {
-      return post(`${baseUrl}/messages/polls`, headers, body);
-    },
-    async votePoll(body) {
-      return post(`${baseUrl}/messages/polls/vote`, headers, body);
-    },
-    async labels(accountId) {
-      return request(`${baseUrl}/labels?accountId=${encodeURIComponent(accountId)}`, headers);
-    },
-    async labelInfo(body) {
-      return post(`${baseUrl}/labels/info`, headers, body);
-    },
-    async chatsByLabel(body) {
-      return post(`${baseUrl}/labels/chats`, headers, body);
-    },
-    async chatLabels(body) {
-      return post(`${baseUrl}/labels/chat-labels`, headers, body);
-    },
-    async updateChatLabels(body) {
-      return post(`${baseUrl}/labels/update-chats`, headers, body);
-    },
-    async broadcasts(accountId) {
-      return request(`${baseUrl}/broadcasts?accountId=${encodeURIComponent(accountId)}`, headers);
-    },
-    async broadcastInfo(body) {
-      return post(`${baseUrl}/broadcasts/info`, headers, body);
-    },
-    async chats(accountId) {
-      return request(`${baseUrl}/chats?accountId=${encodeURIComponent(accountId)}`, headers);
-    },
-    async chatInfo(body) {
-      return post(`${baseUrl}/chats/info`, headers, body);
-    },
-    async chatMessages(body) {
-      return post(`${baseUrl}/chats/messages`, headers, body);
-    },
-    async chatSearchMessages(body) {
-      return post(`${baseUrl}/chats/search-messages`, headers, body);
-    },
-    async archiveChat(body) {
-      return post(`${baseUrl}/chats/archive`, headers, body);
-    },
-    async unarchiveChat(body) {
-      return post(`${baseUrl}/chats/unarchive`, headers, body);
-    },
-    async pinChat(body) {
-      return post(`${baseUrl}/chats/pin`, headers, body);
-    },
-    async unpinChat(body) {
-      return post(`${baseUrl}/chats/unpin`, headers, body);
-    },
-    async markChatUnread(body) {
-      return post(`${baseUrl}/chats/mark-unread`, headers, body);
-    },
-    async sendSeen(body) {
-      return post(`${baseUrl}/chats/seen`, headers, body);
-    },
-    async sendTyping(body) {
-      return post(`${baseUrl}/chats/typing`, headers, body);
-    },
-    async sendRecording(body) {
-      return post(`${baseUrl}/chats/recording`, headers, body);
-    },
-    async clearChatState(body) {
-      return post(`${baseUrl}/chats/clear-state`, headers, body);
-    },
-    async clearChatMessages(body) {
-      return post(`${baseUrl}/chats/clear-messages`, headers, body);
-    },
-    async deleteChat(body) {
-      return post(`${baseUrl}/chats/delete`, headers, body);
-    },
-    async syncHistory(body) {
-      return post(`${baseUrl}/chats/sync-history`, headers, body);
-    },
-    async joinGroupByInvite(body) {
-      return post(`${baseUrl}/groups/join-by-invite`, headers, body);
-    },
-    async getInviteInfo(body) {
-      return post(`${baseUrl}/groups/invite-info`, headers, body);
-    },
-    async acceptGroupV4Invite(body) {
-      return post(`${baseUrl}/groups/accept-v4-invite`, headers, body);
-    },
-    async createGroup(body) {
-      return post(`${baseUrl}/groups/create`, headers, body);
-    },
-    async getGroupInvite(body) {
-      return post(`${baseUrl}/groups/invite-code`, headers, body);
-    },
-    async revokeGroupInvite(body) {
-      return post(`${baseUrl}/groups/invite-revoke`, headers, body);
-    },
-    async getGroupInfo(body) {
-      return post(`${baseUrl}/groups/info`, headers, body);
-    },
-    async leaveGroup(body) {
-      return post(`${baseUrl}/groups/leave`, headers, body);
-    },
-    async groupMembershipRequests(body) {
-      return post(`${baseUrl}/groups/membership-requests`, headers, body);
-    },
-    async approveGroupMembershipRequests(body) {
-      return post(`${baseUrl}/groups/membership-requests/approve`, headers, body);
-    },
-    async rejectGroupMembershipRequests(body) {
-      return post(`${baseUrl}/groups/membership-requests/reject`, headers, body);
-    },
-    async updateGroup(body) {
-      return post(`${baseUrl}/groups/update`, headers, body);
-    },
-    async addGroupParticipants(body) {
-      return post(`${baseUrl}/groups/participants/add`, headers, body);
-    },
-    async kickGroupParticipants(body) {
-      return post(`${baseUrl}/groups/participants/kick`, headers, body);
-    },
-    async promoteGroupParticipants(body) {
-      return post(`${baseUrl}/groups/participants/promote`, headers, body);
-    },
-    async demoteGroupParticipants(body) {
-      return post(`${baseUrl}/groups/participants/demote`, headers, body);
-    },
-    async muteChat(body) {
-      return post(`${baseUrl}/chats/mute`, headers, body);
-    },
-    async unmuteChat(body) {
-      return post(`${baseUrl}/chats/unmute`, headers, body);
-    },
-    async blockContact(body) {
-      return post(`${baseUrl}/contacts/block`, headers, body);
-    },
-    async unblockContact(body) {
-      return post(`${baseUrl}/contacts/unblock`, headers, body);
-    },
-    async contacts(accountId) {
-      return request(`${baseUrl}/contacts?accountId=${encodeURIComponent(accountId)}`, headers);
-    },
-    async blockedContacts(accountId) {
-      return request(`${baseUrl}/contacts/blocked?accountId=${encodeURIComponent(accountId)}`, headers);
-    },
-    async contactInfo(body) {
-      return post(`${baseUrl}/contacts/info`, headers, body);
-    },
-    async commonGroups(body) {
-      return post(`${baseUrl}/contacts/common-groups`, headers, body);
-    },
-    async formattedNumber(body) {
-      return post(`${baseUrl}/contacts/formatted-number`, headers, body);
-    },
-    async countryCode(body) {
-      return post(`${baseUrl}/contacts/country-code`, headers, body);
-    },
-    async isRegistered(body) {
-      return post(`${baseUrl}/contacts/is-registered`, headers, body);
-    },
-    async numberId(body) {
-      return post(`${baseUrl}/contacts/number-id`, headers, body);
-    },
-    async contactDeviceCount(body) {
-      return post(`${baseUrl}/contacts/device-count`, headers, body);
-    },
-    async profilePicture(body) {
-      return post(`${baseUrl}/contacts/profile-picture`, headers, body);
-    },
-    async saveAddressBookContact(body) {
-      return post(`${baseUrl}/contacts/address-book`, headers, body);
-    },
-    async deleteAddressBookContact(body) {
-      return request(`${baseUrl}/contacts/address-book`, headers, {
-        method: "DELETE",
-        body: JSON.stringify(body),
-        headers: { "content-type": "application/json", ...(headers ?? {}) }
-      });
-    },
-    async contactLidPhone(body) {
-      return post(`${baseUrl}/contacts/lid-phone`, headers, body);
-    },
-    async addCustomerNote(body) {
-      return post(`${baseUrl}/contacts/customer-note`, headers, body);
-    },
-    async customerNote(body) {
-      return post(`${baseUrl}/contacts/customer-note/get`, headers, body);
-    },
-    async setStatus(body) {
-      return post(`${baseUrl}/accounts/status`, headers, body);
-    },
-    async revokeStatusMessage(body) {
-      return post(`${baseUrl}/accounts/status/revoke`, headers, body);
-    },
-    async setDisplayName(body) {
-      return post(`${baseUrl}/accounts/display-name`, headers, body);
-    },
-    async setProfilePicture(body) {
-      return post(`${baseUrl}/accounts/profile-picture`, headers, body);
-    },
-    async deleteProfilePicture(body) {
-      return request(`${baseUrl}/accounts/profile-picture`, headers, {
-        method: "DELETE",
-        body: JSON.stringify(body),
-        headers: { "content-type": "application/json", ...(headers ?? {}) }
-      });
-    },
-    async pairingCode(body) {
-      return post(`${baseUrl}/accounts/pairing-code`, headers, body);
-    },
-    async presenceAvailable(body) {
-      return post(`${baseUrl}/accounts/presence/available`, headers, body);
-    },
-    async presenceUnavailable(body) {
-      return post(`${baseUrl}/accounts/presence/unavailable`, headers, body);
-    },
-    async accountState(body) {
-      return post(`${baseUrl}/accounts/state`, headers, body);
-    },
-    async accountVersion(body) {
-      return post(`${baseUrl}/accounts/version`, headers, body);
-    },
-    async autoDownload(body) {
-      return post(`${baseUrl}/accounts/auto-download`, headers, body);
-    },
-    async callLink(body) {
-      return post(`${baseUrl}/accounts/call-link`, headers, body);
-    },
-    async createScheduledEvent(body) {
-      return post(`${baseUrl}/events/scheduled`, headers, body);
-    },
-    async respondScheduledEvent(body) {
-      return post(`${baseUrl}/events/scheduled/respond`, headers, body);
-    },
-    async createChannel(body) {
-      return post(`${baseUrl}/channels`, headers, body);
-    },
-    async listChannels(accountId) {
-      return request(`${baseUrl}/channels?accountId=${encodeURIComponent(accountId)}`, headers);
-    },
-    async searchChannels(body) {
-      return post(`${baseUrl}/channels/search`, headers, body);
-    },
-    async getChannelByInvite(body) {
-      return post(`${baseUrl}/channels/by-invite`, headers, body);
-    },
-    async updateChannel(body) {
-      return post(`${baseUrl}/channels/update`, headers, body);
-    },
-    async channelSubscribers(body) {
-      return post(`${baseUrl}/channels/subscribers`, headers, body);
-    },
-    async channelMessages(body) {
-      return post(`${baseUrl}/channels/messages`, headers, body);
-    },
-    async subscribeChannel(body) {
-      return post(`${baseUrl}/channels/subscribe`, headers, body);
-    },
-    async unsubscribeChannel(body) {
-      return post(`${baseUrl}/channels/unsubscribe`, headers, body);
-    },
-    async muteChannel(body) {
-      return post(`${baseUrl}/channels/mute`, headers, body);
-    },
-    async unmuteChannel(body) {
-      return post(`${baseUrl}/channels/unmute`, headers, body);
-    },
-    async seenChannel(body) {
-      return post(`${baseUrl}/channels/seen`, headers, body);
-    },
-    async sendChannelMessage(body) {
-      return post(`${baseUrl}/channels/send`, headers, body);
-    },
-    async inviteChannelAdmin(body) {
-      return post(`${baseUrl}/channels/admin/invite`, headers, body);
-    },
-    async acceptChannelAdminInvite(body) {
-      return post(`${baseUrl}/channels/admin/accept`, headers, body);
-    },
-    async revokeChannelAdminInvite(body) {
-      return post(`${baseUrl}/channels/admin/revoke`, headers, body);
-    },
-    async demoteChannelAdmin(body) {
-      return post(`${baseUrl}/channels/admin/demote`, headers, body);
-    },
-    async transferChannelOwnership(body) {
-      return post(`${baseUrl}/channels/transfer-ownership`, headers, body);
-    },
-    async deleteChannel(body) {
-      return post(`${baseUrl}/channels/delete`, headers, body);
-    }
+    systemStatus: () => request(`${baseUrl}/system`, headers, signal),
+    reloadSystem: () => post(`${baseUrl}/system:reload`, headers, {}, signal),
+    apiKeys: () => request(`${baseUrl}/system/keys`, headers, signal),
+    getApiKey: (apiKeyId) => request(`${baseUrl}/system/keys/${encode(apiKeyId)}`, headers, signal),
+    createApiKey: (body) => post(`${baseUrl}/system/keys`, headers, body, signal),
+    updateApiKey: (apiKeyId, body) => patch(`${baseUrl}/system/keys/${encode(apiKeyId)}`, headers, body, signal),
+    rotateApiKey: (body) => post(`${baseUrl}/system/keys/${encode(body.apiKeyId)}:rotate`, headers, body.key ? { key: body.key } : {}, signal),
+    deleteApiKey: (apiKeyId) => del(`${baseUrl}/system/keys/${encode(apiKeyId)}`, headers, signal),
+    accounts: () => request(`${baseUrl}/accounts`, headers, signal),
+    getAccount: (accountId) => request(`${accountPath(accountId)}`, headers, signal),
+    loginQr: (accountId) => post(`${accountPath(accountId)}/login/qr`, headers, {}, signal),
+    pairingCode: (body) => post(`${accountPath(body.accountId)}/login/pairing-code`, headers, without(body, "accountId"), signal),
+    setStatus: (body) => post(`${accountPath(body.accountId)}/profile/status`, headers, { text: body.status }, signal),
+    revokeStatusMessage: (body) => del(`${accountPath(body.accountId)}/profile/status/${encode(body.messageId)}`, headers, signal),
+    setDisplayName: (body) => post(`${accountPath(body.accountId)}/profile/name`, headers, { displayName: body.displayName }, signal),
+    setProfilePicture: (body) => post(`${accountPath(body.accountId)}/profile/photo`, headers, { media: body.media }, signal),
+    deleteProfilePicture: (accountId) => del(`${accountPath(accountId)}/profile/photo`, headers, signal),
+    presenceSet: (body) => post(`${accountPath(body.accountId)}/presence`, headers, { presence: body.presence }, signal),
+    accountState: (accountId) => request(`${accountPath(accountId)}/state`, headers, signal),
+    accountVersion: (accountId) => request(`${accountPath(accountId)}/version`, headers, signal),
+    autoDownload: (body) => patch(`${accountPath(body.accountId)}/settings/auto-download`, headers, without(body, "accountId"), signal),
+    callLink: (body) => post(`${accountPath(body.accountId)}/call-links`, headers, without(body, "accountId"), signal),
+    messages: (accountId) => request(`${baseUrl}/messages${query(accountId ? { accountId } : {})}`, headers, signal),
+    getMessage: (body) => request(`${messagePath(body.accountId, body.messageId)}`, headers, signal),
+    sendMessage: (body) => post(`${chatPath(body.accountId, body.chatId)}/messages`, headers, without(body, "accountId", "chatId"), signal),
+    reply: (body) => post(`${messagePath(body.accountId, body.messageId)}:reply`, headers, without(body, "accountId", "messageId"), signal),
+    forward: (body) => post(`${messagePath(body.accountId, body.messageId)}:forward`, headers, { chatId: body.chatId }, signal),
+    editMessage: (body) => patch(`${messagePath(body.accountId, body.messageId)}`, headers, { text: body.text }, signal),
+    deleteMessage: (body) => del(`${messagePath(body.accountId, body.messageId)}${query({ everyone: body.everyone, clearMedia: body.clearMedia })}`, headers, signal),
+    react: (body) => put(`${messagePath(body.accountId, body.messageId)}/reaction`, headers, { reaction: body.reaction }, signal),
+    messageReactions: (body) => request(`${messagePath(body.accountId, body.messageId)}/reaction`, headers, signal),
+    messagePollVotes: (body) => request(`${messagePath(body.accountId, body.messageId)}/poll-votes`, headers, signal),
+    starMessage: (body) => put(`${messagePath(body.accountId, body.messageId)}/star`, headers, {}, signal),
+    unstarMessage: (body) => del(`${messagePath(body.accountId, body.messageId)}/star`, headers, signal),
+    pinMessage: (body) => put(`${messagePath(body.accountId, body.messageId)}/pin`, headers, { duration: body.duration }, signal),
+    unpinMessage: (body) => del(`${messagePath(body.accountId, body.messageId)}/pin`, headers, signal),
+    votePoll: (body) => post(`${messagePath(body.accountId, body.messageId)}/poll-votes`, headers, { selectedOptions: body.selectedOptions }, signal),
+    respondScheduledEvent: (body) => post(`${messagePath(body.accountId, body.eventMessageId)}/event-response`, headers, { response: body.response }, signal),
+    chats: (accountId) => request(`${accountPath(accountId)}/chats`, headers, signal),
+    chatInfo: (body) => request(`${chatPath(body.accountId, body.chatId)}`, headers, signal),
+    chatMessages: (body) => request(`${chatPath(body.accountId, body.chatId)}/messages${query({ limit: body.limit, fromMe: body.fromMe })}`, headers, signal),
+    chatSearchMessages: (body) => request(`${accountPath(body.accountId)}/messages:search${query({ query: body.query, chatId: body.chatId, page: body.page, limit: body.limit })}`, headers, signal),
+    archiveChat: (body) => put(`${chatPath(body.accountId, body.chatId)}/archive`, headers, {}, signal),
+    unarchiveChat: (body) => del(`${chatPath(body.accountId, body.chatId)}/archive`, headers, signal),
+    pinChat: (body) => put(`${chatPath(body.accountId, body.chatId)}/pin`, headers, {}, signal),
+    unpinChat: (body) => del(`${chatPath(body.accountId, body.chatId)}/pin`, headers, signal),
+    muteChat: (body) => put(`${chatPath(body.accountId, body.chatId)}/mute`, headers, body.until ? { until: body.until } : {}, signal),
+    unmuteChat: (body) => del(`${chatPath(body.accountId, body.chatId)}/mute`, headers, signal),
+    markChatUnread: (body) => post(`${chatPath(body.accountId, body.chatId)}/read:mark-unread`, headers, {}, signal),
+    sendSeen: (body) => post(`${chatPath(body.accountId, body.chatId)}/read:seen`, headers, {}, signal),
+    sendTyping: (body, active) => post(`${chatPath(body.accountId, body.chatId)}/activity/typing:${active ? "start" : "stop"}`, headers, {}, signal),
+    sendRecording: (body, active) => post(`${chatPath(body.accountId, body.chatId)}/activity/recording:${active ? "start" : "stop"}`, headers, {}, signal),
+    clearChatMessages: (body) => del(`${chatPath(body.accountId, body.chatId)}/messages`, headers, signal),
+    deleteChat: (body) => del(`${chatPath(body.accountId, body.chatId)}`, headers, signal),
+    syncHistory: (body) => post(`${chatPath(body.accountId, body.chatId)}/history:sync`, headers, {}, signal),
+    createGroup: (body) => post(`${accountPath(body.accountId)}/groups`, headers, without(body, "accountId"), signal),
+    getGroupInfo: (body) => request(`${groupPath(body.accountId, body.groupId)}`, headers, signal),
+    updateGroup: (body) => patch(`${groupPath(body.accountId, body.groupId)}`, headers, without(body, "accountId", "groupId"), signal),
+    leaveGroup: (body) => post(`${groupPath(body.accountId, body.groupId)}:leave`, headers, {}, signal),
+    joinGroupByInvite: (body) => post(`${accountPath(body.accountId)}/group-invites/${encode(body.inviteCode)}:join`, headers, {}, signal),
+    getInviteInfo: (body) => request(`${accountPath(body.accountId)}/group-invites/${encode(body.inviteCode)}`, headers, signal),
+    acceptGroupV4Invite: (body) => post(`${accountPath(body.accountId)}/group-invites/${encode(body.inviteCode)}:private-accept`, headers, without(body, "accountId", "inviteCode"), signal),
+    getGroupInvite: (body) => request(`${groupPath(body.accountId, body.groupId)}/invite-code`, headers, signal),
+    revokeGroupInvite: (body) => del(`${groupPath(body.accountId, body.groupId)}/invite-code`, headers, signal),
+    groupMembershipRequests: (body) => request(`${groupPath(body.accountId, body.groupId)}/membership-requests`, headers, signal),
+    approveGroupMembershipRequests: (body) => post(`${groupPath(body.accountId, body.groupId)}/membership-requests:approve`, headers, without(body, "accountId", "groupId"), signal),
+    rejectGroupMembershipRequests: (body) => post(`${groupPath(body.accountId, body.groupId)}/membership-requests:reject`, headers, without(body, "accountId", "groupId"), signal),
+    addGroupParticipants: (body) => post(`${groupPath(body.accountId, body.groupId)}/participants:add`, headers, { participantIds: body.participantIds, comment: body.comment }, signal),
+    kickGroupParticipants: (body) => post(`${groupPath(body.accountId, body.groupId)}/participants:remove`, headers, { participantIds: body.participantIds, comment: body.comment }, signal),
+    promoteGroupParticipants: (body) => post(`${groupPath(body.accountId, body.groupId)}/participants:promote`, headers, { participantIds: body.participantIds, comment: body.comment }, signal),
+    demoteGroupParticipants: (body) => post(`${groupPath(body.accountId, body.groupId)}/participants:demote`, headers, { participantIds: body.participantIds, comment: body.comment }, signal),
+    listChannels: (accountId) => request(`${accountPath(accountId)}/channels`, headers, signal),
+    searchChannels: (body) => request(`${accountPath(body.accountId)}/channels:search${query(without(body, "accountId"))}`, headers, signal),
+    createChannel: (body) => post(`${accountPath(body.accountId)}/channels`, headers, without(body, "accountId"), signal),
+    getChannel: (body) => request(`${channelPath(body.accountId, body.channelId)}`, headers, signal),
+    getChannelByInvite: (body) => request(`${accountPath(body.accountId)}/channels:by-invite${query({ inviteCode: body.inviteCode })}`, headers, signal),
+    updateChannel: (body) => patch(`${channelPath(body.accountId, body.channelId)}`, headers, without(body, "accountId", "channelId"), signal),
+    channelSubscribers: (body) => request(`${channelPath(body.accountId, body.channelId)}/subscribers${query({ limit: body.limit })}`, headers, signal),
+    channelMessages: (body) => request(`${channelPath(body.accountId, body.channelId)}/messages${query({ limit: body.limit, fromMe: body.fromMe })}`, headers, signal),
+    sendChannelMessage: (body) => post(`${channelPath(body.accountId, body.channelId)}/messages`, headers, without(body, "accountId", "channelId"), signal),
+    subscribeChannel: (body) => put(`${channelPath(body.accountId, body.channelId)}/subscription`, headers, {}, signal),
+    unsubscribeChannel: (body) => del(`${channelPath(body.accountId, body.channelId)}/subscription`, headers, signal),
+    muteChannel: (body) => put(`${channelPath(body.accountId, body.channelId)}/mute`, headers, {}, signal),
+    unmuteChannel: (body) => del(`${channelPath(body.accountId, body.channelId)}/mute`, headers, signal),
+    seenChannel: (body) => post(`${channelPath(body.accountId, body.channelId)}/read:seen`, headers, {}, signal),
+    inviteChannelAdmin: (body) => post(`${channelPath(body.accountId, body.channelId)}/admins:invite`, headers, { userId: body.userId, comment: body.comment }, signal),
+    acceptChannelAdminInvite: (body) => post(`${channelPath(body.accountId, body.channelId)}/admins:accept`, headers, {}, signal),
+    revokeChannelAdminInvite: (body) => post(`${channelPath(body.accountId, body.channelId)}/admins:revoke-invite`, headers, { userId: body.userId, comment: body.comment }, signal),
+    demoteChannelAdmin: (body) => post(`${channelPath(body.accountId, body.channelId)}/admins:demote`, headers, { userId: body.userId }, signal),
+    transferChannelOwnership: (body) => post(`${channelPath(body.accountId, body.channelId)}/ownership:transfer`, headers, { newOwnerId: body.newOwnerId, shouldDismissSelfAsAdmin: body.shouldDismissSelfAsAdmin }, signal),
+    deleteChannel: (body) => del(`${channelPath(body.accountId, body.channelId)}`, headers, signal),
+    labels: (accountId) => request(`${accountPath(accountId)}/labels`, headers, signal),
+    labelInfo: (body) => request(`${accountPath(body.accountId)}/labels/${encode(body.labelId)}`, headers, signal),
+    chatsByLabel: (body) => request(`${accountPath(body.accountId)}/labels/${encode(body.labelId)}/chats`, headers, signal),
+    chatLabels: (body) => request(`${chatPath(body.accountId, body.chatId)}/labels`, headers, signal),
+    updateChatLabels: (body) => put(`${accountPath(body.accountId)}/chat-labels`, headers, { chatIds: body.chatIds, labelIds: body.labelIds }, signal),
+    broadcasts: (accountId) => request(`${accountPath(accountId)}/broadcasts`, headers, signal),
+    broadcastInfo: (body) => request(`${accountPath(body.accountId)}/broadcasts/${encode(body.broadcastId)}`, headers, signal),
+    contacts: (accountId) => request(`${accountPath(accountId)}/contacts`, headers, signal),
+    blockedContacts: (accountId) => request(`${accountPath(accountId)}/contacts/blocked`, headers, signal),
+    contactInfo: (body) => request(`${contactPath(body.accountId, body.contactId)}`, headers, signal),
+    blockContact: (body) => put(`${contactPath(body.accountId, body.contactId)}/block`, headers, {}, signal),
+    unblockContact: (body) => del(`${contactPath(body.accountId, body.contactId)}/block`, headers, signal),
+    commonGroups: (body) => request(`${contactPath(body.accountId, body.contactId)}/groups/common`, headers, signal),
+    formattedNumber: (body) => request(`${accountPath(body.accountId)}/numbers:format${query({ value: body.value })}`, headers, signal),
+    countryCode: (body) => request(`${accountPath(body.accountId)}/numbers:country-code${query({ value: body.value })}`, headers, signal),
+    numberId: (body) => request(`${accountPath(body.accountId)}/numbers:resolve-id${query({ number: body.number })}`, headers, signal),
+    isRegistered: (body) => request(`${contactPath(body.accountId, body.contactId)}/registration`, headers, signal),
+    contactDeviceCount: (body) => request(`${contactPath(body.accountId, body.contactId)}/device-count`, headers, signal),
+    profilePicture: (body) => request(`${contactPath(body.accountId, body.contactId)}/photo`, headers, signal),
+    saveAddressBookContact: (body) => put(`${accountPath(body.accountId)}/address-book/${encode(body.phoneNumber)}`, headers, { firstName: body.firstName, lastName: body.lastName, syncToAddressbook: body.syncToAddressbook }, signal),
+    deleteAddressBookContact: (body) => del(`${accountPath(body.accountId)}/address-book/${encode(body.phoneNumber)}`, headers, signal),
+    contactLidPhone: (body) => post(`${accountPath(body.accountId)}/identities:resolve-lid-phone`, headers, { userIds: body.userIds }, signal),
+    addCustomerNote: (body) => put(`${accountPath(body.accountId)}/contacts/${encode(body.userId)}/note`, headers, { note: body.note }, signal),
+    customerNote: (body) => request(`${accountPath(body.accountId)}/contacts/${encode(body.userId)}/note`, headers, signal),
+    workflows: () => request(`${baseUrl}/workflows`, headers, signal),
+    workflowProviders: () => request(`${baseUrl}/workflows/providers`, headers, signal),
+    workflowExecutions: () => request(`${baseUrl}/workflows/executions`, headers, signal),
+    validateWorkflow: (body) => post(`${baseUrl}/workflows:validate`, headers, body, signal),
+    upsertWorkflow: (body) => put(`${baseUrl}/workflows`, headers, body, signal),
+    testWorkflow: (body) => post(`${baseUrl}/workflows:test`, headers, body, signal),
+    webhooks: () => request(`${baseUrl}/webhooks`, headers, signal),
+    webhookDeliveries: () => request(`${baseUrl}/webhooks/deliveries`, headers, signal),
+    upsertWebhook: (body) => put(`${baseUrl}/webhooks/${encode(body.id)}`, headers, without(body, "id"), signal),
+    removeWebhook: (webhookId) => del(`${baseUrl}/webhooks/${encode(webhookId)}`, headers, signal),
+    replayWebhookDelivery: (deliveryId) => post(`${baseUrl}/webhooks/deliveries/${encode(deliveryId)}:replay`, headers, {}, signal),
+    testWebhookEvent: (body) => post(`${baseUrl}/webhooks/events/${encode(body.eventType)}:test`, headers, without(body, "eventType"), signal)
   };
 }
 
-async function post<T>(url: string, headers: Record<string, string> | undefined, body: unknown): Promise<T> {
-  return request<T>(url, headers, {
-    method: "POST",
-    body: JSON.stringify(body),
-    headers: { "content-type": "application/json", ...(headers ?? {}) }
-  });
+async function post<T>(url: string, headers: Record<string, string> | undefined, body: unknown, signal?: AbortSignal): Promise<T> {
+  return request<T>(url, headers, signal, jsonInit("POST", body, headers));
 }
 
-async function request<T>(url: string, headers?: Record<string, string>, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: init?.headers ?? headers
-  });
+async function put<T>(url: string, headers: Record<string, string> | undefined, body: unknown, signal?: AbortSignal): Promise<T> {
+  return request<T>(url, headers, signal, jsonInit("PUT", body, headers));
+}
 
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
-  }
+async function patch<T>(url: string, headers: Record<string, string> | undefined, body: unknown, signal?: AbortSignal): Promise<T> {
+  return request<T>(url, headers, signal, jsonInit("PATCH", body, headers));
+}
 
+async function del<T>(url: string, headers: Record<string, string> | undefined, signal?: AbortSignal): Promise<T> {
+  return request<T>(url, headers, signal, { method: "DELETE", headers });
+}
+
+async function request<T>(url: string, headers?: Record<string, string>, signal?: AbortSignal, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, { ...init, headers: init?.headers ?? headers, signal: init?.signal ?? signal });
+  if (!response.ok) throw new Error(`Request failed: ${response.status} ${response.statusText}`);
   return (await response.json()) as T;
+}
+
+function jsonInit(method: string, body: unknown, headers?: Record<string, string>): RequestInit {
+  return { method, body: JSON.stringify(body), headers: { "content-type": "application/json", ...(headers ?? {}) } };
+}
+
+function encode(value: string): string {
+  return encodeURIComponent(value);
+}
+
+function without<T extends object, K extends keyof T>(value: T, ...keys: K[]): Omit<T, K> {
+  const copy = { ...value } as Record<string, unknown>;
+  for (const key of keys) delete copy[key as string];
+  return copy as Omit<T, K>;
+}
+
+function query(values: Record<string, unknown>): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(values)) {
+    if (value === undefined || value === null || value === "") continue;
+    params.set(key, String(value));
+  }
+  const encoded = params.toString();
+  return encoded ? `?${encoded}` : "";
 }

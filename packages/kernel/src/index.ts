@@ -64,7 +64,8 @@ export class Kernel {
         uptimeMs: Date.now() - this.startedAt,
         moduleCount: this.options.modules.length,
         accountCount: this.accountRegistry.list().length
-      })
+      }),
+      reload: (reason: string) => this.options.requestReload?.(reason)
     });
     this.eventBus.subscribe("*", async (event) => {
       this.storage.saveEvent(event as DomainEvent);

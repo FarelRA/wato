@@ -26,7 +26,7 @@ test("kernel exposes workflow engine capability to modules", async () => {
       dataDir: "./data",
       logLevel: "error",
       accounts: [{ id: "default", label: "Default", enabled: true }],
-      api: { enabled: false, host: "127.0.0.1", port: 3199 },
+      api: { enabled: false, host: "127.0.0.1", port: 3199, keys: [{ id: "test", name: "Test", key: "secret", permissions: ["*"] }] },
       workflows: [],
       whatsapp: { autoInitialize: false, archiveMedia: false, headless: true },
       webhooks: { enabled: false, maxAttempts: 1, baseDelayMs: 1, endpoints: [] }

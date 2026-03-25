@@ -63,7 +63,7 @@ export interface KernelConfig {
     enabled: boolean;
     host: string;
     port: number;
-    authToken?: string;
+    keys: ApiKeySeed[];
   };
   workflows: unknown[];
   whatsapp: {
@@ -118,6 +118,7 @@ export interface KernelOptions {
   logger: Logger;
   config: KernelConfig;
   modules: WatoModule[];
+  requestReload?: (reason: string) => Promise<void> | void;
 }
 
 export interface MessageEnvelope {
@@ -177,6 +178,61 @@ export interface MediaInput {
   mimeType?: string;
   filename?: string;
   url?: string;
+}
+
+export interface UnifiedLocationPayload {
+  latitude: number;
+  longitude: number;
+  name?: string;
+  address?: string;
+  url?: string;
+  description?: string;
+}
+
+export interface UnifiedPollPayload {
+  question: string;
+  options: string[];
+  allowMultipleAnswers?: boolean;
+}
+
+export interface UnifiedEventPayload {
+  name: string;
+  startTime: string;
+  description?: string;
+  endTime?: string;
+  location?: string;
+  callType?: string;
+  isEventCanceled?: boolean;
+}
+
+export interface UnifiedMessageSendRequest {
+  accountId: string;
+  chatId: string;
+  text?: string;
+  image?: MediaInput;
+  video?: MediaInput;
+  audio?: MediaInput;
+  voice?: MediaInput;
+  document?: MediaInput;
+  sticker?: MediaInput;
+  gif?: MediaInput;
+  contacts?: string[];
+  location?: UnifiedLocationPayload;
+  poll?: UnifiedPollPayload;
+  event?: UnifiedEventPayload;
+  caption?: string;
+  quotedMessageId?: string;
+  mentions?: string[];
+  groupMentions?: Array<{ id: string; subject: string }>;
+  viewOnce?: boolean;
+  hd?: boolean;
+  stickerName?: string;
+  stickerAuthor?: string;
+  stickerCategories?: string[];
+}
+
+export interface UnifiedChannelSendRequest extends Omit<UnifiedMessageSendRequest, "chatId" | "groupMentions"> {
+  channelId: string;
 }
 
 export interface SendMediaRequest {
@@ -610,6 +666,7 @@ export interface WorkflowRegistry {
 }
 
 export interface WhatsAppGateway {
+  getMessage(request: MessageActionRequest): Promise<MessageEnvelope>;
   sendText(request: OutboundMessageRequest & SendTextOptions): Promise<{ messageId?: string }>;
   sendMedia(request: SendMediaRequest): Promise<{ messageId?: string }>;
   sendContactCards(request: SendContactCardsRequest): Promise<{ messageId?: string }>;
@@ -702,6 +759,7 @@ export interface WhatsAppGateway {
   respondToScheduledEvent(request: ScheduleEventResponseRequest): Promise<boolean>;
   getGroupInfo(request: { accountId: string; groupId: string }): Promise<GroupSummary>;
   createChannel(request: ChannelCreateRequest): Promise<unknown>;
+  getChannel(request: ChannelActionRequest): Promise<ChannelSummary>;
   listChannels(request: { accountId: string }): Promise<ChannelSummary[]>;
   searchChannels(request: ChannelSearchRequest): Promise<ChannelSummary[]>;
   getChannelByInvite(request: ChannelInviteRequest): Promise<ChannelSummary>;
@@ -726,6 +784,12 @@ export interface StorageEngine {
   upsertAccounts(accounts: AccountRecord[]): void;
   saveEvent(event: DomainEvent): void;
   getEvent(eventId: string): DomainEvent | undefined;
+  saveApiKey(record: StoredApiKeyRecord): void;
+  getApiKey(apiKeyId: string): StoredApiKeyRecord | undefined;
+  getApiKeyByHash(keyHash: string): StoredApiKeyRecord | undefined;
+  listApiKeys(): ApiKeyRecord[];
+  deleteApiKey(apiKeyId: string): void;
+  touchApiKey(apiKeyId: string, lastUsedAt: string): void;
   saveWorkflow(workflow: unknown): void;
   listWorkflows(): unknown[];
   saveWorkflowExecution(record: WorkflowExecutionRecord): void;
@@ -761,6 +825,58 @@ export interface SystemStatus {
 
 export interface SystemController {
   getStatus(): SystemStatus;
+  reload(reason: string): Promise<void> | void;
+}
+
+export interface ApiKeySeed {
+  id: string;
+  name: string;
+  key: string;
+  enabled?: boolean;
+  permissions?: string[];
+  expiresAt?: string;
+}
+
+export interface ApiKeyRecord {
+  id: string;
+  name: string;
+  enabled: boolean;
+  permissions: string[];
+  source: "config" | "managed";
+  createdAt: string;
+  updatedAt: string;
+  expiresAt?: string;
+  lastUsedAt?: string;
+}
+
+export interface StoredApiKeyRecord extends ApiKeyRecord {
+  keyHash: string;
+}
+
+export interface ApiKeyCreateRequest {
+  id?: string;
+  name: string;
+  key?: string;
+  enabled?: boolean;
+  permissions?: string[];
+  expiresAt?: string;
+}
+
+export interface ApiKeyUpdateRequest {
+  apiKeyId: string;
+  name?: string;
+  enabled?: boolean;
+  permissions?: string[];
+  expiresAt?: string | null;
+}
+
+export interface ApiKeyDeleteRequest {
+  apiKeyId: string;
+}
+
+export interface ApiKeyRotateRequest {
+  apiKeyId: string;
+  key?: string;
 }
 
 export const capabilityNames = {

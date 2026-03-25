@@ -320,20 +320,20 @@ Workflow validation checks:
 ### CLI
 
 - `wato workflow list`
-- `wato workflow providers`
-- `wato workflow executions`
+- `wato workflow execution list`
+- `wato workflow provider list`
 - `wato workflow validate`
-- `wato workflow upsert '<json>'`
-- `wato workflow test '<json>'`
+- `wato workflow upsert --json '{...}'`
+- `wato workflow test --json '{...}'`
 
 ### API
 
-- `GET /workflows`
-- `GET /workflow-providers`
-- `GET /workflow-executions`
-- `POST /workflows`
-- `POST /workflows/validate`
-- `POST /workflows/test`
+- `GET /v1/workflows`
+- `GET /v1/workflows/providers`
+- `GET /v1/workflows/executions`
+- `PUT /v1/workflows`
+- `POST /v1/workflows:validate`
+- `POST /v1/workflows:test`
 
 ## Dry-run example
 
@@ -344,7 +344,7 @@ bun run dev:cli -- workflow test
 Or provide your own payload:
 
 ```bash
-bun run dev:cli -- workflow test '{
+bun run dev:cli -- workflow test --json '{
   "eventType": "message.received",
   "accountId": "default",
   "payload": {

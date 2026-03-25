@@ -2,230 +2,494 @@
 
 The CLI is a thin API client for the local daemon.
 
-Usage pattern:
-
 ```bash
-bun run dev:cli -- <group> <command> [args]
+bun run dev:cli -- <resource> <subcategory> <action> [args] [options]
 ```
 
-Or after building:
+## Conventions
 
-```bash
-bun dist/wato.js -- <group> <command> [args]
-```
-
-Conventions:
-
-- command shape is `wato <group> <command> [required args] [options]`
 - required values prefer positional args
-- optional values prefer flags
-- structured input is passed with `--json '{...}'`
-- use `wato <group> --help` or `wato <group> <command> --help` for command-specific examples
+- optional values use flags
+- every object command accepts `--json '{...}'`
+- `--json` merges first, then positionals, then flags
+- use `--help` on any level to inspect the live tree
+- API auth is automatic in the CLI; it uses the first enabled configured API key
 
-## Core commands
+## Topology
 
-### System
+- `system`
+- `account`
+- `chat`
+- `message`
+- `group`
+- `channel`
+- `contact`
+- `label`
+- `broadcast`
+- `workflow`
+- `webhook`
+
+## Common JSON shapes
+
+### Media input
+
+```json
+{
+  "filePath": "/tmp/demo.png",
+  "base64": "...",
+  "mimeType": "image/png",
+  "filename": "demo.png",
+  "url": "https://example.com/demo.png"
+}
+```
+
+### Unified chat send JSON
+
+Exactly one primary payload family is allowed unless the request is text-only.
+
+```json
+{
+  "accountId": "default",
+  "chatId": "12345@c.us",
+  "text": "hello from wato",
+  "image": { "filePath": "/tmp/demo.png" },
+  "video": { "filePath": "/tmp/demo.mp4" },
+  "audio": { "filePath": "/tmp/demo.mp3" },
+  "voice": { "filePath": "/tmp/demo.ogg" },
+  "document": { "filePath": "/tmp/report.pdf" },
+  "sticker": { "filePath": "/tmp/sticker.webp" },
+  "gif": { "filePath": "/tmp/demo.gif" },
+  "contacts": ["12345@c.us"],
+  "location": {
+    "latitude": -6.2,
+    "longitude": 106.8,
+    "description": "Jakarta"
+  },
+  "poll": {
+    "question": "Lunch?",
+    "options": ["yes", "no"],
+    "allowMultipleAnswers": false
+  },
+  "event": {
+    "name": "Weekly sync",
+    "startTime": "2026-03-25T10:00:00Z",
+    "description": "planning",
+    "endTime": "2026-03-25T11:00:00Z",
+    "location": "Meeting room",
+    "callType": "video",
+    "isEventCanceled": false
+  },
+  "caption": "demo",
+  "quotedMessageId": "3EB0...",
+  "mentions": ["12345@c.us"],
+  "groupMentions": [{ "id": "120363...@g.us", "subject": "Ops" }],
+  "viewOnce": false,
+  "hd": false,
+  "stickerName": "Wato",
+  "stickerAuthor": "Ops",
+  "stickerCategories": ["ops"]
+}
+```
+
+### Unified channel send JSON
+
+Channel sends accept text, image, video, audio, document, or gif.
+
+```json
+{
+  "accountId": "default",
+  "channelId": "120363000000000000@newsletter",
+  "text": "hello from wato",
+  "image": { "filePath": "/tmp/demo.png" },
+  "video": { "filePath": "/tmp/demo.mp4" },
+  "audio": { "filePath": "/tmp/demo.mp3" },
+  "document": { "filePath": "/tmp/report.pdf" },
+  "gif": { "filePath": "/tmp/demo.gif" },
+  "caption": "demo",
+  "mentions": ["12345@c.us"]
+}
+```
+
+## Command Reference
+
+### `system`
 
 - `wato system status`
+  - args: none
+  - options: none
+  - example: `bun run dev:cli -- system status`
+- `wato system reload`
+  - args: none
+  - options: none
+  - example: `bun run dev:cli -- system reload`
+- `wato system key list`
+  - example: `bun run dev:cli -- system key list`
+- `wato system key get [apiKeyId]`
+  - JSON schema:
+    ```json
+    { "apiKeyId": "ops-key" }
+    ```
+  - examples:
+    - `bun run dev:cli -- system key get ops-key`
+    - `bun run dev:cli -- system key get --json '{"apiKeyId":"ops-key"}'`
+- `wato system key create [name] [options]`
+  - options: `--id`, `--key`, `--enabled`, `--permissions`, `--expires-at`
+  - JSON schema:
+    ```json
+    {
+      "id": "ops-key",
+      "name": "Ops key",
+      "key": "replace-me",
+      "enabled": true,
+      "permissions": ["read", "write"],
+      "expiresAt": "2026-12-31T23:59:59Z"
+    }
+    ```
+  - examples:
+    - `bun run dev:cli -- system key create "Ops key" --permissions "read,write"`
+    - `bun run dev:cli -- system key create --json '{"name":"Ops key","permissions":["*"]}'`
+- `wato system key update [apiKeyId] [options]`
+  - options: `--name`, `--enabled`, `--permissions`, `--expires-at`, `--clear-expires-at`
+  - JSON schema:
+    ```json
+    {
+      "apiKeyId": "ops-key",
+      "name": "Ops key",
+      "enabled": true,
+      "permissions": ["read"],
+      "expiresAt": null
+    }
+    ```
+  - examples:
+    - `bun run dev:cli -- system key update ops-key --enabled false`
+    - `bun run dev:cli -- system key update --json '{"apiKeyId":"ops-key","permissions":["read"]}'`
+- `wato system key rotate [apiKeyId] [options]`
+  - options: `--key`
+  - JSON schema:
+    ```json
+    { "apiKeyId": "ops-key", "key": "new-secret" }
+    ```
+  - examples:
+    - `bun run dev:cli -- system key rotate ops-key`
+    - `bun run dev:cli -- system key rotate ops-key --key "new-secret"`
+- `wato system key delete [apiKeyId]`
+  - JSON schema:
+    ```json
+    { "apiKeyId": "ops-key" }
+    ```
+  - examples:
+    - `bun run dev:cli -- system key delete ops-key`
+    - `bun run dev:cli -- system key delete --json '{"apiKeyId":"ops-key"}'`
 
-### Accounts
+### `account`
 
 - `wato account list`
-- `wato account login <accountId> [mode] [phoneNumber]`
-- `wato account set-status <accountId> <status>`
-- `wato account display-name --json '{...}'`
-- `wato account revoke-status --json '{...}'`
-- `wato account profile-picture --json '{...}'`
-- `wato account delete-profile-picture --json '{...}'`
-- `wato account presence-available --json '{...}'`
-- `wato account presence-unavailable --json '{...}'`
-- `wato account state --json '{...}'`
-- `wato account version --json '{...}'`
-- `wato account auto-download --json '{...}'`
-- `wato account call-link --json '{...}'`
+- `wato account get [accountId]`
+  - JSON schema: `{ "accountId": "default" }`
+- `wato account login qr [accountId]`
+  - JSON schema: `{ "accountId": "default" }`
+- `wato account login pairing-code [accountId] [phoneNumber] [options]`
+  - options: `--show-notification`, `--interval-ms`
+  - JSON schema:
+    ```json
+    {
+      "accountId": "default",
+      "phoneNumber": "628123456789",
+      "showNotification": true,
+      "intervalMs": 180000
+    }
+    ```
+- `wato account profile status set [accountId] [status...]`
+  - JSON schema: `{ "accountId": "default", "text": "online" }`
+- `wato account profile status revoke [accountId] [messageId]`
+  - JSON schema: `{ "accountId": "default", "messageId": "3EB0..." }`
+- `wato account profile name set [accountId] [displayName...]`
+  - JSON schema: `{ "accountId": "default", "displayName": "Wato Ops" }`
+- `wato account profile photo set [accountId] [path]`
+  - JSON schema: `{ "accountId": "default", "media": { "filePath": "/tmp/avatar.png" } }`
+- `wato account profile photo clear [accountId]`
+  - JSON schema: `{ "accountId": "default" }`
+- `wato account presence set [accountId] [presence]`
+  - JSON schema: `{ "accountId": "default", "presence": "available" }`
+- `wato account state [accountId]`
+- `wato account version [accountId]`
+- `wato account settings auto-download [accountId] [options]`
+  - options: `--audio`, `--documents`, `--photos`, `--videos`, `--background-sync`
+  - JSON schema:
+    ```json
+    {
+      "accountId": "default",
+      "audio": true,
+      "documents": false,
+      "photos": true,
+      "videos": false,
+      "backgroundSync": true
+    }
+    ```
+- `wato account call-link create [accountId] [startTime] [callType]`
+  - JSON schema:
+    ```json
+    {
+      "accountId": "default",
+      "startTime": "2026-03-25T10:00:00Z",
+      "callType": "video"
+    }
+    ```
 
-## Workflows
+### `chat`
+
+- `wato chat list [accountId]`
+- `wato chat get [accountId] [chatId]`
+- `wato chat message list [accountId] [chatId] [options]`
+  - options: `--limit`, `--from-me`
+  - JSON schema: `{ "accountId": "default", "chatId": "12345@c.us", "limit": 20, "fromMe": false }`
+- `wato chat message clear [accountId] [chatId]`
+- `wato chat message search [accountId] [query...] [options]`
+  - options: `--chat-id`, `--page`, `--limit`
+  - JSON schema: `{ "accountId": "default", "query": "hello", "chatId": "12345@c.us", "page": 1, "limit": 20 }`
+- `wato chat archive set|clear [accountId] [chatId]`
+- `wato chat pin set|clear [accountId] [chatId]`
+- `wato chat mute set [accountId] [chatId] [options]`
+  - options: `--until`
+  - JSON schema: `{ "accountId": "default", "chatId": "12345@c.us", "until": "2026-12-31T23:59:59Z" }`
+- `wato chat mute clear [accountId] [chatId]`
+- `wato chat read seen [accountId] [chatId]`
+- `wato chat read mark-unread [accountId] [chatId]`
+- `wato chat activity typing start|stop [accountId] [chatId]`
+- `wato chat activity recording start|stop [accountId] [chatId]`
+- `wato chat history sync [accountId] [chatId]`
+- `wato chat delete [accountId] [chatId]`
+
+### `message`
+
+- `wato message list [accountId]`
+  - JSON schema: `{ "accountId": "default" }`
+- `wato message get [accountId] [messageId]`
+  - JSON schema: `{ "accountId": "default", "messageId": "3EB0..." }`
+- `wato message send [accountId] [chatId] [text...] [options]`
+  - structural payload options: `--image`, `--video`, `--audio`, `--voice`, `--document`, `--sticker`, `--gif`, `--contact`, `--latitude`, `--longitude`, `--poll-question`, `--poll-option`, `--poll-allow-multiple-answers`, `--event-name`, `--event-start`, `--event-description`, `--event-end`, `--event-location`, `--event-call-type`, `--event-canceled`
+  - shared options: `--caption`, `--quoted-message-id`, `--mention`, `--view-once`, `--hd`, `--sticker-name`, `--sticker-author`, `--sticker-category`
+  - JSON schema: see unified chat send shape above
+  - examples:
+    - `bun run dev:cli -- message send default 12345@c.us "hello"`
+    - `bun run dev:cli -- message send default 12345@c.us --image /tmp/demo.png --caption "demo"`
+    - `bun run dev:cli -- message send --json '{"accountId":"default","chatId":"12345@c.us","poll":{"question":"Lunch?","options":["yes","no"]}}'`
+- `wato message reply [accountId] [messageId] [text...]`
+  - JSON schema: `{ "accountId": "default", "messageId": "3EB0...", "text": "roger" }`
+- `wato message forward [accountId] [messageId] [chatId]`
+  - JSON schema: `{ "accountId": "default", "messageId": "3EB0...", "chatId": "67890@c.us" }`
+- `wato message edit [accountId] [messageId] [text...]`
+  - JSON schema: `{ "accountId": "default", "messageId": "3EB0...", "text": "updated" }`
+- `wato message delete [accountId] [messageId] [options]`
+  - options: `--everyone`, `--clear-media`
+  - JSON schema: `{ "accountId": "default", "messageId": "3EB0...", "everyone": true, "clearMedia": false }`
+- `wato message react [accountId] [messageId] [reaction]`
+  - JSON schema: `{ "accountId": "default", "messageId": "3EB0...", "reaction": "👍" }`
+- `wato message reaction list [accountId] [messageId]`
+- `wato message star set|clear [accountId] [messageId]`
+- `wato message pin set [accountId] [messageId] [duration]`
+  - JSON schema: `{ "accountId": "default", "messageId": "3EB0...", "duration": 86400 }`
+- `wato message pin clear [accountId] [messageId]`
+- `wato message poll vote [accountId] [messageId] [selectedOptions...]`
+  - JSON schema: `{ "accountId": "default", "messageId": "3EB0...", "selectedOptions": ["yes"] }`
+- `wato message poll votes [accountId] [messageId]`
+- `wato message event respond [accountId] [messageId] [response]`
+  - JSON schema: `{ "accountId": "default", "messageId": "3EB0...", "response": 1 }`
+
+### `group`
+
+- `wato group create [accountId] [title...] [options]`
+  - options: `--participants`, `--message-timer`, `--parent-group-id`, `--auto-send-invite-v4`, `--comment`, `--member-add-mode`, `--membership-approval-mode`, `--restrict`, `--announce`
+- `wato group get [accountId] [groupId]`
+- `wato group update [accountId] [groupId] [options]`
+  - options: `--subject`, `--description`, `--messages-admins-only`, `--info-admins-only`, `--add-members-admins-only`
+- `wato group leave [accountId] [groupId]`
+- `wato group invite join [accountId] [inviteCode]`
+- `wato group invite info [accountId] [inviteCode]`
+- `wato group invite private-accept [accountId] [inviteCode] [inviteCodeExp] [groupId] [fromId] [toId] [options]`
+  - options: `--group-name`
+- `wato group invite code get|revoke [accountId] [groupId]`
+- `wato group participant add|remove|promote|demote [accountId] [groupId] [participantIds...] [options]`
+  - options: `--comment`
+- `wato group request list [accountId] [groupId]`
+- `wato group request approve|reject [accountId] [groupId] [options]`
+  - options: `--requester-id`, `--sleep`
+
+### `channel`
+
+- `wato channel list [accountId]`
+- `wato channel search [accountId] [options]`
+  - options: `--search-text`, `--country-code`, `--skip-subscribed-newsletters`, `--view`, `--limit`
+- `wato channel create [accountId] [title...] [options]`
+  - options: `--description`
+- `wato channel get [accountId] [channelId]`
+- `wato channel get-by-invite [accountId] [inviteCode]`
+- `wato channel update [accountId] [channelId] [options]`
+  - options: `--subject`, `--description`, `--reaction-setting`, `--profile-picture`
+- `wato channel subscriber list [accountId] [channelId] [options]`
+  - options: `--limit`
+- `wato channel message list [accountId] [channelId] [options]`
+  - options: `--limit`, `--from-me`
+- `wato channel message send [accountId] [channelId] [text...] [options]`
+  - supported payload options only: `--image`, `--video`, `--audio`, `--document`, `--gif`
+  - shared options: `--caption`, `--mention`
+  - JSON schema: see unified channel send shape above
+- `wato channel subscription set|clear [accountId] [channelId]`
+- `wato channel mute set|clear [accountId] [channelId]`
+- `wato channel read seen [accountId] [channelId]`
+- `wato channel admin invite [accountId] [channelId] [userId] [options]`
+  - options: `--comment`
+- `wato channel admin accept [accountId] [channelId]`
+- `wato channel admin revoke-invite [accountId] [channelId] [userId] [options]`
+  - options: `--comment`
+- `wato channel admin demote [accountId] [channelId] [userId]`
+- `wato channel ownership transfer [accountId] [channelId] [newOwnerId] [options]`
+  - options: `--dismiss-self-as-admin`
+- `wato channel delete [accountId] [channelId]`
+
+### `contact`
+
+- `wato contact list [accountId]`
+- `wato contact blocked list [accountId]`
+- `wato contact get [accountId] [contactId]`
+- `wato contact block set|clear [accountId] [contactId]`
+- `wato contact group common [accountId] [contactId]`
+- `wato contact number format [accountId] [value]`
+- `wato contact number country-code [accountId] [value]`
+- `wato contact number resolve-id [accountId] [number]`
+- `wato contact registration get [accountId] [contactId]`
+- `wato contact device-count [accountId] [contactId]`
+- `wato contact photo get [accountId] [contactId]`
+- `wato contact address-book upsert [accountId] [phoneNumber] [firstName] [lastName] [options]`
+  - options: `--sync-to-addressbook`
+  - JSON schema:
+    ```json
+    {
+      "accountId": "default",
+      "phoneNumber": "628123456789",
+      "firstName": "Farel",
+      "lastName": "Aditiya",
+      "syncToAddressbook": true
+    }
+    ```
+- `wato contact address-book delete [accountId] [phoneNumber]`
+- `wato contact identity resolve-lid-phone [accountId] [userIds...]`
+  - JSON schema: `{ "accountId": "default", "userIds": ["12345@lid"] }`
+- `wato contact note set [accountId] [userId] [note...]`
+  - JSON schema: `{ "accountId": "default", "userId": "12345@c.us", "note": "VIP" }`
+- `wato contact note get [accountId] [userId]`
+
+### `label`
+
+- `wato label list [accountId]`
+- `wato label get [accountId] [labelId]`
+- `wato label chat list [accountId] [labelId]`
+- `wato label chat-label list [accountId] [chatId]`
+- `wato label chat-label set [accountId] [chatIds...] [options]`
+  - options: `--label-id`
+  - JSON schema: `{ "accountId": "default", "chatIds": ["12345@c.us"], "labelIds": ["1", "2"] }`
+
+### `broadcast`
+
+- `wato broadcast list [accountId]`
+- `wato broadcast get [accountId] [broadcastId]`
+
+### `workflow`
 
 - `wato workflow list`
-- `wato workflow providers`
-- `wato workflow executions`
-- `wato workflow validate`
+- `wato workflow provider list`
+- `wato workflow execution list`
+- `wato workflow validate --json '{...}'`
 - `wato workflow upsert --json '{...}'`
 - `wato workflow test --json '{...}'`
 
-Notes:
+Example workflow definition:
 
-- `workflow validate` uses a built-in sample if no JSON is provided
-- `workflow test` also has a built-in sample dry-run payload if no JSON is provided
-
-## Webhooks
-
-- `wato webhook list`
-- `wato webhook deliveries`
-- `wato webhook upsert --json '{...}'`
-- `wato webhook remove --json '{...}'`
-- `wato webhook replay --json '{...}'`
-- `wato webhook test-event --json '{...}'`
-
-## Messages
-
-- `wato message list [accountId]`
-- `wato message send <accountId> <chatId> <text>`
-- `wato message send-media --json '{...}'`
-- `wato message send-contacts --json '{...}'`
-- `wato message send-location --json '{...}'`
-- `wato message reply --json '{...}'`
-- `wato message forward --json '{...}'`
-- `wato message edit --json '{...}'`
-- `wato message delete --json '{...}'`
-- `wato message star --json '{...}'`
-- `wato message unstar --json '{...}'`
-- `wato message pin --json '{...}'`
-- `wato message unpin --json '{...}'`
-- `wato message info --json '{...}'`
-- `wato message reactions --json '{...}'`
-- `wato message poll-votes --json '{...}'`
-- `wato message react --json '{...}'`
-
-## Labels and broadcasts
-
-### Labels
-
-- `wato label list <accountId>`
-- `wato label info --json '{...}'`
-- `wato label chats --json '{...}'`
-- `wato label chat-labels --json '{...}'`
-- `wato label update-chats --json '{...}'`
-
-### Broadcasts
-
-- `wato broadcast list <accountId>`
-- `wato broadcast info --json '{...}'`
-
-## Polls
-
-- `wato poll create --json '{...}'`
-- `wato poll vote --json '{...}'`
-
-## Chats
-
-- `wato chat list <accountId>`
-- `wato chat info --json '{...}'`
-- `wato chat messages --json '{...}'`
-- `wato chat search-messages --json '{...}'`
-- `wato chat archive --json '{...}'`
-- `wato chat unarchive --json '{...}'`
-- `wato chat pin --json '{...}'`
-- `wato chat unpin --json '{...}'`
-- `wato chat mark-unread --json '{...}'`
-- `wato chat seen --json '{...}'`
-- `wato chat typing --json '{...}'`
-- `wato chat recording --json '{...}'`
-- `wato chat clear-state --json '{...}'`
-- `wato chat clear-messages --json '{...}'`
-- `wato chat delete --json '{...}'`
-- `wato chat sync-history --json '{...}'`
-- `wato chat mute --json '{...}'`
-- `wato chat unmute --json '{...}'`
-
-## Groups
-
-- `wato group join-invite --json '{...}'`
-- `wato group invite-info --json '{...}'`
-- `wato group accept-v4-invite --json '{...}'`
-- `wato group create --json '{...}'`
-- `wato group get-invite --json '{...}'`
-- `wato group revoke-invite --json '{...}'`
-- `wato group info --json '{...}'`
-- `wato group leave --json '{...}'`
-- `wato group membership-requests --json '{...}'`
-- `wato group approve-requests --json '{...}'`
-- `wato group reject-requests --json '{...}'`
-- `wato group update --json '{...}'`
-- `wato group add --json '{...}'`
-- `wato group kick --json '{...}'`
-- `wato group promote --json '{...}'`
-- `wato group demote --json '{...}'`
-
-## Contacts
-
-- `wato contact block --json '{...}'`
-- `wato contact unblock --json '{...}'`
-- `wato contact list <accountId>`
-- `wato contact blocked <accountId>`
-- `wato contact info --json '{...}'`
-- `wato contact common-groups --json '{...}'`
-- `wato contact formatted-number --json '{...}'`
-- `wato contact country-code --json '{...}'`
-- `wato contact is-registered --json '{...}'`
-- `wato contact number-id --json '{...}'`
-- `wato contact device-count --json '{...}'`
-- `wato contact profile-picture --json '{...}'`
-- `wato contact save-address-book --json '{...}'`
-- `wato contact delete-address-book --json '{...}'`
-- `wato contact lid-phone --json '{...}'`
-- `wato contact add-note --json '{...}'`
-- `wato contact get-note --json '{...}'`
-
-## Scheduled events
-
-- `wato event create-scheduled --json '{...}'`
-- `wato event respond-scheduled --json '{...}'`
-
-## Channels
-
-- `wato channel list <accountId>`
-- `wato channel search --json '{...}'`
-- `wato channel create --json '{...}'`
-- `wato channel by-invite --json '{...}'`
-- `wato channel update --json '{...}'`
-- `wato channel subscribers --json '{...}'`
-- `wato channel messages --json '{...}'`
-- `wato channel subscribe --json '{...}'`
-- `wato channel unsubscribe --json '{...}'`
-- `wato channel mute --json '{...}'`
-- `wato channel unmute --json '{...}'`
-- `wato channel seen --json '{...}'`
-- `wato channel send --json '{...}'`
-- `wato channel invite-admin --json '{...}'`
-- `wato channel accept-admin --json '{...}'`
-- `wato channel revoke-admin --json '{...}'`
-- `wato channel demote-admin --json '{...}'`
-- `wato channel transfer-ownership --json '{...}'`
-- `wato channel delete --json '{...}'`
-
-## CLI examples
-
-### Send a message
-
-```bash
-bun run dev:cli -- message send default 12345@c.us "hello"
-```
-
-### Add a webhook
-
-```bash
-bun run dev:cli -- webhook upsert --json '{
-  "id": "ops-hook",
-  "url": "https://example.com/hooks/wato",
-  "enabled": true,
-  "eventTypes": ["message.received"]
-}'
-```
-
-### Upsert a workflow
-
-```bash
-bun run dev:cli -- workflow upsert --json '{
+```json
+{
   "id": "hello-bot",
-  "name": "Hello Bot",
+  "name": "Hello bot",
   "version": 1,
   "enabled": true,
   "accountScope": { "mode": "all" },
-  "trigger": { "type": "message.received", "config": { "contains": "hello" } },
+  "trigger": { "type": "message.received" },
   "conditions": [],
   "actions": [
-    { "type": "message.sendText", "config": { "text": "hello back", "chatId": "${input.chatId}" } }
+    {
+      "type": "message.sendText",
+      "config": {
+        "chatId": "${input.chatId}",
+        "text": "hello"
+      }
+    }
   ]
-}'
+}
+```
+
+Example workflow test payload:
+
+```json
+{
+  "eventType": "message.received",
+  "accountId": "default",
+  "payload": { "body": "hello" }
+}
+```
+
+### `webhook`
+
+- `wato webhook list`
+- `wato webhook delivery list`
+- `wato webhook upsert [webhookId] [url] [options]`
+  - options: `--secret`, `--enabled`, `--event-type`, `--account-id`, `--header`
+  - JSON schema:
+    ```json
+    {
+      "id": "ops-hook",
+      "url": "https://example.com/hooks/wato",
+      "secret": "super-secret",
+      "enabled": true,
+      "eventTypes": ["message.received"],
+      "accountIds": ["default"],
+      "headers": { "x-env": "prod" }
+    }
+    ```
+- `wato webhook delete [webhookId]`
+- `wato webhook delivery replay [deliveryId]`
+  - JSON schema: `{ "deliveryId": "delivery-123" }`
+- `wato webhook event test [eventType] [options]`
+  - options: `--account-id`, `--payload-json`
+  - JSON schema:
+    ```json
+    {
+      "eventType": "message.received",
+      "accountId": "default",
+      "payload": { "body": "hello" }
+    }
+    ```
+
+## Quick examples by option family
+
+```bash
+# chat text
+bun run dev:cli -- message send default 12345@c.us "hello"
+
+# media
+bun run dev:cli -- message send default 12345@c.us --image /tmp/demo.png --caption "demo"
+bun run dev:cli -- message send default 12345@c.us --document /tmp/report.pdf
+
+# location
+bun run dev:cli -- message send default 12345@c.us --latitude -6.2 --longitude 106.8
+
+# poll
+bun run dev:cli -- message send default 12345@c.us --poll-question "Lunch?" --poll-option yes --poll-option no
+
+# event
+bun run dev:cli -- message send default 12345@c.us --event-name "Weekly sync" --event-start 2026-03-25T10:00:00Z
+
+# channel media
+bun run dev:cli -- channel message send default 120363000000000000@newsletter --image /tmp/banner.png --caption "release"
+
+# webhook event test
+bun run dev:cli -- webhook event test message.received --payload-json '{"body":"hello"}'
 ```

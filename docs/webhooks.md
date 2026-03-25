@@ -2,7 +2,7 @@
 
 ## Overview
 
-`wato` can forward internal events to external HTTP endpoints.
+`wato` forwards internal events to external HTTP endpoints.
 
 The webhook runtime supports:
 
@@ -14,7 +14,7 @@ The webhook runtime supports:
 - delivery history
 - replay by delivery id
 
-## Webhook definition
+## Webhook definition schema
 
 ```json
 {
@@ -36,7 +36,7 @@ Fields:
 - `url`: destination URL
 - `secret`: optional signing secret
 - `enabled`: on/off switch
-- `eventTypes`: list of event types or `*`
+- `eventTypes`: event type allow-list or `*`
 - `accountIds`: optional account filter
 - `headers`: extra static headers
 
@@ -44,67 +44,105 @@ Fields:
 
 When a matching event is published:
 
-1. the webhook runtime filters by event type and account
+1. webhook filters are checked
 2. a delivery record is created
-3. the payload is sent to the endpoint
+3. the payload is sent
 4. success or failure is persisted
-5. if delivery fails and retries remain, the next retry time is scheduled
+5. retries are scheduled when enabled and needed
 
 ## Signing
 
-If `secret` is provided, webhook payloads are signed with HMAC.
-
-Use the shared secret on the receiver side to verify the signature before trusting the payload.
-
-## Replay
-
-Replay is supported by delivery id. The runtime looks up the original delivery and persisted event, then re-sends it.
+If `secret` is provided, payloads are signed with HMAC. Verify the signature before trusting the payload.
 
 ## CLI
 
 - `wato webhook list`
-- `wato webhook deliveries`
-- `wato webhook upsert '<json>'`
-- `wato webhook remove '<json>'`
-- `wato webhook replay '<json>'`
-- `wato webhook test-event '<json>'`
+- `wato webhook delivery list`
+- `wato webhook upsert [webhookId] [url] [options]`
+- `wato webhook delete [webhookId]`
+- `wato webhook delivery replay [deliveryId]`
+- `wato webhook event test [eventType] [options]`
 
-Examples:
+### CLI JSON schemas
 
-```bash
-bun run dev:cli -- webhook upsert '{
+#### Upsert
+
+```json
+{
   "id": "ops-hook",
   "url": "https://example.com/hooks/wato",
   "secret": "super-secret",
   "enabled": true,
-  "eventTypes": ["message.received"]
-}'
+  "eventTypes": ["message.received"],
+  "accountIds": ["default"],
+  "headers": {
+    "x-env": "prod"
+  }
+}
 ```
 
-```bash
-bun run dev:cli -- webhook replay '{"deliveryId":"delivery-1"}'
+#### Delivery replay
+
+```json
+{
+  "deliveryId": "delivery-123"
+}
 ```
 
-```bash
-bun run dev:cli -- webhook test-event '{
+#### Event test
+
+```json
+{
   "eventType": "message.received",
   "accountId": "default",
-  "payload": { "body": "hello" }
-}'
+  "payload": {
+    "body": "hello"
+  }
+}
+```
+
+### CLI examples
+
+```bash
+bun run dev:cli -- webhook list
+bun run dev:cli -- webhook delivery list
+bun run dev:cli -- webhook upsert ops-hook https://example.com/hooks/wato --secret super-secret --event-type message.received
+bun run dev:cli -- webhook upsert --json '{"id":"ops-hook","url":"https://example.com/hooks/wato","eventTypes":["message.received"]}'
+bun run dev:cli -- webhook delete ops-hook
+bun run dev:cli -- webhook delivery replay delivery-123
+bun run dev:cli -- webhook event test message.received --account-id default --payload-json '{"body":"hello"}'
 ```
 
 ## API
 
-- `GET /webhooks`
-- `POST /webhooks`
-- `DELETE /webhooks`
-- `GET /webhook-deliveries`
-- `POST /webhooks/replay`
-- `POST /webhooks/test`
+- `GET /v1/webhooks`
+- `PUT /v1/webhooks/{webhookId}`
+- `DELETE /v1/webhooks/{webhookId}`
+- `GET /v1/webhooks/deliveries`
+- `POST /v1/webhooks/deliveries/{deliveryId}:replay`
+- `POST /v1/webhooks/events/{eventType}:test`
 
-## Delivery records
+### API examples
 
-Persisted delivery records include:
+```bash
+curl http://127.0.0.1:3147/v1/webhooks \
+  -H 'Authorization: Bearer change-me'
+
+curl -X PUT http://127.0.0.1:3147/v1/webhooks/ops-hook \
+  -H 'Authorization: Bearer change-me' \
+  -H 'content-type: application/json' \
+  -d '{"url":"https://example.com/hooks/wato","eventTypes":["message.received"]}'
+
+curl -X POST http://127.0.0.1:3147/v1/webhooks/deliveries/delivery-123:replay \
+  -H 'Authorization: Bearer change-me'
+
+curl -X POST http://127.0.0.1:3147/v1/webhooks/events/message.received:test \
+  -H 'Authorization: Bearer change-me' \
+  -H 'content-type: application/json' \
+  -d '{"accountId":"default","payload":{"body":"hello"}}'
+```
+
+## Delivery record fields
 
 - `id`
 - `webhookId`
@@ -121,6 +159,6 @@ Persisted delivery records include:
 
 ## Operational notes
 
-- if the daemon does not start because the configured port is busy, change `WATO_API_PORT`
-- replay depends on the original event and delivery being present in storage
-- webhook filtering is runtime-level, so broad event types can generate a lot of traffic
+- if the configured API port is busy, change `WATO_API_PORT`
+- replay depends on the original event and delivery still being present in storage
+- broad `eventTypes` can generate a lot of traffic

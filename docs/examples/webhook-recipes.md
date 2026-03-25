@@ -2,10 +2,14 @@
 
 ## Recipe 1: Basic event forwarder
 
-Use this when you want every inbound message to hit another service.
+```bash
+bun run dev:cli -- webhook upsert messages-basic https://example.com/hooks/messages --event-type message.received
+```
+
+JSON equivalent:
 
 ```bash
-bun run dev:cli -- webhook upsert '{
+bun run dev:cli -- webhook upsert --json '{
   "id": "messages-basic",
   "url": "https://example.com/hooks/messages",
   "enabled": true,
@@ -13,72 +17,49 @@ bun run dev:cli -- webhook upsert '{
 }'
 ```
 
-## Recipe 2: Signed production-style endpoint
+## Recipe 2: Signed production endpoint
 
 ```bash
-bun run dev:cli -- webhook upsert '{
-  "id": "ops-signed",
-  "url": "https://example.com/hooks/wato",
-  "secret": "replace-me",
-  "enabled": true,
-  "eventTypes": ["message.received", "message.ack"],
-  "headers": {
-    "x-service": "wato"
-  }
-}'
+bun run dev:cli -- webhook upsert ops-signed https://example.com/hooks/wato \
+  --secret replace-me \
+  --event-type message.received \
+  --event-type message.ack \
+  --header x-service=wato
 ```
-
-Use this when:
-
-- your receiver verifies HMAC signatures
-- you want custom headers for routing or environment tagging
 
 ## Recipe 3: Account-scoped notifications
 
 ```bash
-bun run dev:cli -- webhook upsert '{
-  "id": "ops-default-account",
-  "url": "https://example.com/hooks/default-account",
-  "enabled": true,
-  "eventTypes": ["message.received"],
-  "accountIds": ["default"]
-}'
+bun run dev:cli -- webhook upsert ops-default-account https://example.com/hooks/default-account \
+  --event-type message.received \
+  --account-id default
 ```
 
-## Recipe 4: Test event publishing
+## Recipe 4: Publish a synthetic event
 
 ```bash
-bun run dev:cli -- webhook test-event '{
-  "eventType": "message.received",
-  "accountId": "default",
-  "payload": {
-    "body": "hello from webhook test"
-  }
-}'
+bun run dev:cli -- webhook event test message.received \
+  --account-id default \
+  --payload-json '{"body":"hello from webhook test"}'
 ```
 
-Useful for:
-
-- validating downstream receivers
-- testing delivery behavior without a live WhatsApp message
-
-## Recipe 5: Replay failed delivery
-
-First inspect deliveries:
+API equivalent:
 
 ```bash
-bun run dev:cli -- webhook deliveries
+curl -X POST http://127.0.0.1:3147/v1/webhooks/events/message.received:test \
+  -H 'Authorization: Bearer change-me' \
+  -H 'content-type: application/json' \
+  -d '{"accountId":"default","payload":{"body":"hello from webhook test"}}'
 ```
 
-Then replay one:
+## Recipe 5: Replay a failed delivery
 
 ```bash
-bun run dev:cli -- webhook replay '{"deliveryId":"delivery-123"}'
+bun run dev:cli -- webhook delivery list
+bun run dev:cli -- webhook delivery replay delivery-123
 ```
 
-## Recipe 6: Receiver implementation sketch
-
-Minimal Node-style receiver:
+## Recipe 6: Receiver sketch
 
 ```ts
 import crypto from "node:crypto";
@@ -108,17 +89,16 @@ http.createServer((req, res) => {
 }).listen(8080);
 ```
 
-## Recipe 7: Workflow + webhook together
+## Recipe 7: Workflow plus webhook
 
-This pattern is useful when you want internal action plus external notification.
-
-1. Create a workflow that reacts to the message and replies or tags data.
-2. Register a webhook on `message.received` or the relevant internal event stream.
-3. Use workflow execution history for internal visibility and webhook deliveries for outbound visibility.
+1. Create a workflow for the internal action path.
+2. Register a webhook on the same event stream.
+3. Use workflow execution history for internal visibility.
+4. Use webhook delivery history for outbound visibility.
 
 ## Operating advice
 
 - use narrow `eventTypes` in production
-- scope by `accountIds` when different teams own different accounts
+- scope by `accountIds` when teams own different accounts
 - keep secrets unique per endpoint
-- replay only after the receiver is fixed, not while it is still failing
+- replay only after the receiver is fixed

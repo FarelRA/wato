@@ -1,74 +1,131 @@
 # wato
 
-`wato` is a Bun-first, microkernel WhatsApp automation platform built around a local daemon, a JSON-friendly CLI, a typed HTTP API, persistent webhooks, and a workflow engine that can turn inbound WhatsApp events into structured automation.
+`wato` is a Bun-first, microkernel WhatsApp automation platform with a local daemon, a resource-first CLI, a Bearer-protected HTTP API, persistent workflow/webhook state, and multi-account session management built on `whatsapp-web.js`.
 
-## Why it exists
+## What it is
 
-Most WhatsApp automation projects stop at message send/receive. `wato` is designed as an operator-friendly control plane:
+- one daemon manages multiple WhatsApp accounts
+- one public control surface is exposed in two forms: CLI and HTTP API
+- workflows react to inbound events and invoke typed actions
+- webhooks fan events out to other systems with retry and replay support
+- SQLite stores operational metadata such as accounts, API keys, workflows, executions, webhooks, deliveries, and domain events
 
-- run multiple WhatsApp accounts in one daemon
-- expose a local HTTP API and CLI for automation and scripting
-- persist events, messages, workflows, executions, webhooks, and deliveries in SQLite
-- model integrations as kernel modules instead of a single monolith
-- build workflows that can inspect trigger data, transform it, and call WhatsApp actions
-- replay and observe webhook deliveries instead of treating them as fire-and-forget
+## What it can do
 
-## What it can do today
-
-- manage multi-account WhatsApp Web sessions through `whatsapp-web.js`
-- send text, media, contacts, locations, replies, reactions, polls, forwards, edits, deletes, pins, stars, and more
-- automate chats, groups, channels, contacts, account state, labels, broadcasts, notes, and scheduled events
-- run workflows with trigger matching, condition evaluation, action chaining, interpolation, named action outputs, and dry-run testing
-- push signed outbound webhooks with retries and delivery history
-- operate everything through both `wato` CLI commands and the local daemon API
-
-## Project feel
-
-```text
-WhatsApp account events
-  -> kernel event bus
-  -> workflow engine
-  -> utility/data actions + WhatsApp actions
-  -> webhook runtime
-  -> SQLite execution history
-  -> CLI/API inspection and control
-```
+- account login, profile, presence, settings, state, version, and call-link operations
+- chat, message, group, channel, contact, label, and broadcast operations
+- unified message sending for text, media, contacts, location, poll, and scheduled event payloads
+- workflow validation, upsert, dry-run testing, and execution inspection
+- API key bootstrap plus managed create, rotate, update, and delete flows
+- graceful daemon shutdown, signal handling, and config reload
 
 ## Quickstart
 
+Install dependencies:
+
 ```bash
 bun install
+```
+
+Start the daemon:
+
+```bash
 bun run dev:daemon
+```
+
+Check health:
+
+```bash
 bun run dev:cli -- system status
 ```
 
-For local development without launching browser automation immediately:
+Open a login QR for the default account:
+
+```bash
+bun run dev:cli -- account login qr default
+```
+
+Send a message:
+
+```bash
+bun run dev:cli -- message send default 12345@c.us "hello from wato"
+```
+
+For local development without immediately initializing browser sessions:
 
 ```bash
 WATO_AUTO_INITIALIZE=false bun run dev:daemon
 ```
 
-Useful entrypoints:
+## Default config shape
 
-- daemon: `bun run dev:daemon`
-- CLI: `bun run dev:cli -- <command>`
-- tests: `bun test`
-- typecheck: `bun run typecheck`
-- build: `bun run build`
+```json
+{
+  "dataDir": "./data",
+  "logLevel": "info",
+  "accounts": [
+    {
+      "id": "default",
+      "label": "Default Account",
+      "enabled": true,
+      "metadata": {
+        "team": "ops"
+      }
+    }
+  ],
+  "api": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 3147,
+    "keys": [
+      {
+        "id": "default",
+        "name": "Default API key",
+        "key": "change-me",
+        "enabled": true,
+        "permissions": ["*"],
+        "expiresAt": null
+      }
+    ]
+  },
+  "workflows": [],
+  "whatsapp": {
+    "autoInitialize": true,
+    "archiveMedia": true,
+    "headless": true
+  },
+  "webhooks": {
+    "enabled": true,
+    "maxAttempts": 3,
+    "baseDelayMs": 1000,
+    "endpoints": []
+  }
+}
+```
 
-## Documentation
+## Public topology
 
-- overview: `docs/index.md`
-- getting started: `docs/getting-started.md`
-- configuration: `docs/configuration.md`
-- architecture: `docs/architecture.md`
-- topology and module map: `docs/topology.md`
-- workflow engine: `docs/workflows.md`
-- webhooks: `docs/webhooks.md`
-- HTTP API: `docs/api.md`
-- CLI reference: `docs/cli.md`
-- examples and use cases: `docs/examples/index.md`
-- operations and development notes: `docs/operations.md`
+CLI groups:
+
+- `system`
+- `account`
+- `chat`
+- `message`
+- `group`
+- `channel`
+- `contact`
+- `label`
+- `broadcast`
+- `workflow`
+- `webhook`
+
+HTTP API base path:
+
+- `/v1`
+
+Authentication:
+
+- `Authorization: Bearer <key>`
 
 ## Workspace
 
@@ -81,17 +138,17 @@ packages/
   api-client/
   api-types/
   config/
+  core/
   event-bus/
   kernel/
   logging/
   module-graph/
-  core/
   storage-sqlite/
   workflow-engine/
   workflow-types/
 modules/
-  action-message/
   action-data/
+  action-message/
   runtime-api/
   runtime-health/
   runtime-webhook/
@@ -101,6 +158,33 @@ modules/
 docs/
 ```
 
-## Status
+## Documentation
 
-`wato` already has a working vertical slice with real integrations, not placeholder stubs. The biggest remaining work is hardening against more live-session edge cases, growing the workflow provider set, and deepening operational tooling.
+- overview: `docs/index.md`
+- getting started: `docs/getting-started.md`
+- configuration: `docs/configuration.md`
+- architecture: `docs/architecture.md`
+- topology: `docs/topology.md`
+- CLI reference: `docs/cli.md`
+- API reference: `docs/api.md`
+- workflows: `docs/workflows.md`
+- webhooks: `docs/webhooks.md`
+- examples hub: `docs/examples/index.md`
+- operations: `docs/operations.md`
+
+## Common commands
+
+```bash
+# daemon
+bun run dev:daemon
+
+# CLI
+bun run dev:cli -- system status
+bun run dev:cli -- workflow provider list
+bun run dev:cli -- webhook delivery list
+
+# checks
+bun run typecheck
+bun run build
+bun test
+```

@@ -80,7 +80,7 @@ export function utilityActionTestHarness() {
       dataDir: "/tmp",
       logLevel: "error",
       accounts: [],
-      api: { enabled: false, host: "127.0.0.1", port: 1 },
+      api: { enabled: false, host: "127.0.0.1", port: 1, keys: [{ id: "test", name: "Test", key: "secret", permissions: ["*"] }] },
       workflows: [],
       whatsapp: { autoInitialize: false, archiveMedia: false, headless: true },
       webhooks: { enabled: false, maxAttempts: 1, baseDelayMs: 1, endpoints: [] }

@@ -2,6 +2,8 @@
 
 This directory is the complete technical reference for `wato`.
 
+The docs are organized from startup/configuration, to architecture, to full operator references, to copy-paste examples.
+
 ## Read this first
 
 - `getting-started.md` - install, run, and connect your first daemon
@@ -15,7 +17,7 @@ This directory is the complete technical reference for `wato`.
 ## Operator references
 
 - `api.md` - full daemon HTTP API reference
-- `cli.md` - full CLI reference grouped by command family
+- `cli.md` - full CLI reference grouped by resource family
 - `webhooks.md` - webhook model, signing, retry, replay, and examples
 - `workflows.md` - workflow schema, trigger data, interpolation, actions, testing, and examples
 - `operations.md` - local development, verification, ports, persistence, and troubleshooting

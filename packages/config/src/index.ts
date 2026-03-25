@@ -46,9 +46,16 @@ const configSchema = z.object({
       enabled: z.boolean().default(true),
       host: z.string().default("127.0.0.1"),
       port: z.number().int().positive().default(3147),
-      authToken: z.string().min(1).optional()
+      keys: z.array(z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        key: z.string().min(1),
+        enabled: z.boolean().default(true),
+        permissions: z.array(z.string().min(1)).default(["*"]),
+        expiresAt: z.string().datetime().optional()
+      })).min(1)
     })
-    .default({ enabled: true, host: "127.0.0.1", port: 3147 }),
+    .default({ enabled: true, host: "127.0.0.1", port: 3147, keys: [{ id: "default", name: "Default API key", key: "change-me", enabled: true, permissions: ["*"] }] }),
   workflows: z.array(workflowSchema).default([]),
   whatsapp: z
     .object({
@@ -94,7 +101,7 @@ export async function createWatoConfig(configPath?: string): Promise<KernelConfi
     api: {
       host: process.env.WATO_API_HOST,
       port: process.env.WATO_API_PORT ? Number(process.env.WATO_API_PORT) : undefined,
-      authToken: process.env.WATO_API_TOKEN
+      keys: process.env.WATO_API_KEY ? [{ id: "env", name: "Environment API key", key: process.env.WATO_API_KEY, enabled: true, permissions: ["*"] }] : undefined
     },
     whatsapp: {
       browserPath: process.env.WATO_BROWSER_PATH,
@@ -118,7 +125,12 @@ function defaultConfig(): KernelConfig {
     dataDir: "./data",
     logLevel: "info",
     accounts: [{ id: "default", label: "Default Account", enabled: true }],
-    api: { enabled: true, host: "127.0.0.1", port: 3147 },
+    api: {
+      enabled: true,
+      host: "127.0.0.1",
+      port: 3147,
+      keys: [{ id: "default", name: "Default API key", key: "change-me", enabled: true, permissions: ["*"] }]
+    },
     workflows: [
       {
         id: "auto-ack",

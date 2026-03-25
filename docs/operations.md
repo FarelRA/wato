@@ -68,7 +68,7 @@ Likely causes:
 Use:
 
 ```bash
-bun run dev:cli -- workflow providers
+bun run dev:cli -- workflow provider list
 bun run dev:cli -- workflow validate
 ```
 
@@ -78,8 +78,8 @@ Check:
 
 - endpoint URL reachability
 - auth/signature expectations on the receiver
-- delivery history via `wato webhook deliveries`
-- replay with `wato webhook replay '<json>'`
+- delivery history via `wato webhook delivery list`
+- replay with `wato webhook delivery replay <deliveryId>`
 
 ### QR not available
 
@@ -102,13 +102,13 @@ bun run build
 For workflow changes, also run:
 
 ```bash
-bun run dev:cli -- workflow providers
+bun run dev:cli -- workflow provider list
 bun run dev:cli -- workflow test
 ```
 
 ## Suggested production cautions
 
 - treat the daemon API as a trusted/local control plane unless you front it with proper network controls
-- use `api.authToken` if anything beyond local development touches the API
+- configure scoped `api.keys` and rotate or expire keys that leave your trusted boundary
 - keep webhook secrets unique per endpoint
 - validate workflows in dry-run mode before enabling them against live sessions

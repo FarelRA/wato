@@ -11,22 +11,22 @@ bun run dev:cli -- system status
 API:
 
 ```bash
-curl http://127.0.0.1:3147/system/status
+curl http://127.0.0.1:3147/v1/system   -H 'Authorization: Bearer change-me'
 ```
 
-## Inspect accounts and QR state
+## Inspect accounts and login state
 
 CLI:
 
 ```bash
 bun run dev:cli -- account list
-bun run dev:cli -- account qr default
+bun run dev:cli -- account login qr default
 ```
 
 API:
 
 ```bash
-curl http://127.0.0.1:3147/accounts
+curl http://127.0.0.1:3147/v1/accounts   -H 'Authorization: Bearer change-me'
 ```
 
 ## Send a text message
@@ -40,26 +40,26 @@ bun run dev:cli -- message send default 12345@c.us "hello"
 API:
 
 ```bash
-curl -X POST http://127.0.0.1:3147/messages/send \
-  -H 'content-type: application/json' \
-  -d '{
-    "accountId": "default",
-    "chatId": "12345@c.us",
+curl -X POST http://127.0.0.1:3147/v1/accounts/default/chats/12345%40c.us/messages   -H 'Authorization: Bearer change-me'   -H 'content-type: application/json'   -d '{
     "text": "hello"
   }'
 ```
 
-## Send media
+## Send media through unified message send
 
 CLI:
 
 ```bash
-bun run dev:cli -- message send-media '{
-  "accountId": "default",
-  "chatId": "12345@c.us",
-  "media": { "filePath": "/tmp/demo.png" },
-  "caption": "demo image"
-}'
+bun run dev:cli -- message send default 12345@c.us --image /tmp/demo.png --caption "demo image"
+```
+
+API:
+
+```bash
+curl -X POST http://127.0.0.1:3147/v1/accounts/default/chats/12345%40c.us/messages   -H 'Authorization: Bearer change-me'   -H 'content-type: application/json'   -d '{
+    "image": { "filePath": "/tmp/demo.png" },
+    "caption": "demo image"
+  }'
 ```
 
 ## Inspect chats
@@ -68,7 +68,8 @@ CLI:
 
 ```bash
 bun run dev:cli -- chat list default
-bun run dev:cli -- chat info '{"accountId":"default","chatId":"12345@c.us"}'
+bun run dev:cli -- chat get default 12345@c.us
+bun run dev:cli -- chat message list default 12345@c.us
 ```
 
 ## Manage a group invite
@@ -76,7 +77,8 @@ bun run dev:cli -- chat info '{"accountId":"default","chatId":"12345@c.us"}'
 CLI:
 
 ```bash
-bun run dev:cli -- group invite-info '{"accountId":"default","inviteCode":"XXXX"}'
+bun run dev:cli -- group invite info default XXXX
+bun run dev:cli -- group invite join default XXXX
 ```
 
 ## Search channels
@@ -84,10 +86,13 @@ bun run dev:cli -- group invite-info '{"accountId":"default","inviteCode":"XXXX"
 CLI:
 
 ```bash
-bun run dev:cli -- channel search '{
-  "accountId": "default",
-  "searchText": "news"
-}'
+bun run dev:cli -- channel search default --search-text news
+```
+
+API:
+
+```bash
+curl 'http://127.0.0.1:3147/v1/accounts/default/channels:search?searchText=news'   -H 'Authorization: Bearer change-me'
 ```
 
 ## Validate and test a workflow
@@ -95,6 +100,7 @@ bun run dev:cli -- channel search '{
 CLI:
 
 ```bash
+bun run dev:cli -- workflow provider list
 bun run dev:cli -- workflow validate
 bun run dev:cli -- workflow test
 ```
@@ -102,10 +108,8 @@ bun run dev:cli -- workflow test
 API:
 
 ```bash
-curl http://127.0.0.1:3147/workflow-providers
-curl -X POST http://127.0.0.1:3147/workflows/test \
-  -H 'content-type: application/json' \
-  -d '{
+curl http://127.0.0.1:3147/v1/workflows/providers   -H 'Authorization: Bearer change-me'
+curl -X POST http://127.0.0.1:3147/v1/workflows:test   -H 'Authorization: Bearer change-me'   -H 'content-type: application/json'   -d '{
     "eventType": "message.received",
     "accountId": "default",
     "payload": {
@@ -115,37 +119,8 @@ curl -X POST http://127.0.0.1:3147/workflows/test \
       "from": "12345@c.us",
       "body": "order A-42",
       "timestamp": "2026-03-24T00:00:00.000Z"
-    },
-    "workflow": {
-      "id": "wf-test",
-      "name": "Test",
-      "version": 1,
-      "enabled": true,
-      "accountScope": { "mode": "all" },
-      "trigger": { "type": "message.received", "config": { "pattern": "(?<orderId>A-[0-9]+)" } },
-      "conditions": [],
-      "actions": [
-        { "id": "ctx", "type": "data.set", "config": { "value": { "orderId": "${trigger.data.groups.orderId}" } } }
-      ]
     }
   }'
-```
-
-## Upsert a workflow from CLI
-
-```bash
-bun run dev:cli -- workflow upsert '{
-  "id": "hello-bot",
-  "name": "Hello Bot",
-  "version": 1,
-  "enabled": true,
-  "accountScope": { "mode": "all" },
-  "trigger": { "type": "message.received", "config": { "contains": "hello" } },
-  "conditions": [],
-  "actions": [
-    { "type": "message.sendText", "config": { "chatId": "${input.chatId}", "text": "hello back" } }
-  ]
-}'
 ```
 
 ## Review webhook deliveries
@@ -154,21 +129,25 @@ CLI:
 
 ```bash
 bun run dev:cli -- webhook list
-bun run dev:cli -- webhook deliveries
+bun run dev:cli -- webhook delivery list
 ```
 
 API:
 
 ```bash
-curl http://127.0.0.1:3147/webhooks
-curl http://127.0.0.1:3147/webhook-deliveries
+curl http://127.0.0.1:3147/v1/webhooks   -H 'Authorization: Bearer change-me'
+curl http://127.0.0.1:3147/v1/webhooks/deliveries   -H 'Authorization: Bearer change-me'
 ```
 
-## Use bearer auth
+## Manage API keys
+
+CLI:
 
 ```bash
-curl http://127.0.0.1:3147/system/status \
-  -H 'authorization: Bearer replace-me'
+bun run dev:cli -- system key list
+bun run dev:cli -- system key create "Ops key" --permissions "read,write"
+bun run dev:cli -- system key rotate bootstrap
+bun run dev:cli -- system key update bootstrap --enabled false
 ```
 
 ## Work on a non-default port

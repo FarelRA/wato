@@ -14,7 +14,16 @@
   "api": {
     "enabled": true,
     "host": "127.0.0.1",
-    "port": 3147
+    "port": 3147,
+    "keys": [
+      {
+        "id": "default",
+        "name": "Default API key",
+        "key": "change-me",
+        "enabled": true,
+        "permissions": ["*"]
+      }
+    ]
   },
   "workflows": [
     {

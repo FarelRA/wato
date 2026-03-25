@@ -38,7 +38,7 @@ This is useful when you want to inspect the platform, validate workflows, or use
 ```bash
 bun run dev:cli -- system status
 bun run dev:cli -- account list
-bun run dev:cli -- workflow providers
+bun run dev:cli -- workflow provider list
 ```
 
 ## Build production bundles
@@ -73,7 +73,16 @@ bun run typecheck
   "api": {
     "enabled": true,
     "host": "127.0.0.1",
-    "port": 3147
+    "port": 3147,
+    "keys": [
+      {
+        "id": "default",
+        "name": "Default API key",
+        "key": "change-me",
+        "enabled": true,
+        "permissions": ["*"]
+      }
+    ]
   },
   "workflows": []
 }
@@ -90,13 +99,13 @@ The built-in sample test exercises:
 - trigger regex extraction
 - workflow interpolation
 - utility data actions
-- a WhatsApp send-text action path
+- a WhatsApp `message.sendText` action path
 
 ## First operational checks
 
 - inspect system: `bun run dev:cli -- system status`
 - inspect accounts: `bun run dev:cli -- account list`
-- fetch QR for an account: `bun run dev:cli -- account qr default`
+- start account login with QR: `bun run dev:cli -- account login default qr`
 - list workflows: `bun run dev:cli -- workflow list`
 - list webhook endpoints: `bun run dev:cli -- webhook list`
 

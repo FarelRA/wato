@@ -34,7 +34,16 @@ Arrays are replaced, not merged.
     "enabled": true,
     "host": "127.0.0.1",
     "port": 3147,
-    "authToken": "change-me"
+    "keys": [
+      {
+        "id": "default",
+        "name": "Default API key",
+        "key": "change-me",
+        "enabled": true,
+        "permissions": ["*"],
+        "expiresAt": null
+      }
+    ]
   },
   "workflows": [],
   "whatsapp": {
@@ -79,7 +88,16 @@ Each account supports:
 - `enabled`: enable or disable the daemon API
 - `host`: bind address
 - `port`: bind port
-- `authToken`: optional bearer token for all API requests
+- `keys`: required bootstrap API keys; configure at least one
+
+Each API key entry supports:
+
+- `id`: stable key id
+- `name`: display name
+- `key`: plaintext secret used in the `Authorization: Bearer <key>` header
+- `enabled`: whether the key may authenticate
+- `permissions`: coarse privileges such as `read`, `write`, `keys:read`, `keys:write`, `system:reload`, `*`, or `<scope>:*`
+- `expiresAt`: optional ISO expiration timestamp
 
 ### `workflows`
 
@@ -123,7 +141,7 @@ This sets account ids and labels, all enabled.
 
 - `WATO_API_HOST`
 - `WATO_API_PORT`
-- `WATO_API_TOKEN`
+- `WATO_API_KEY`
 
 ### WhatsApp runtime
 
@@ -139,10 +157,11 @@ This sets account ids and labels, all enabled.
 
 ## Built-in default workflow
 
-If no workflows are configured yet, the config layer provides a default `auto-ack` workflow that replies with a fixed text message to incoming messages.
+If no workflows are configured yet, the config layer provides a default `auto-ack` workflow that replies through the WhatsApp `message.sendText` action path.
 
 ## Notes
 
 - the config schema validates shape with `zod`
 - `dataDir` is created automatically on startup
 - when arrays are provided in file or env-derived config, they replace defaults
+- `WATO_API_KEY` creates a single bootstrap API key entry for local/dev use
