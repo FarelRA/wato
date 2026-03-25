@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { validateWorkflowDefinition, WorkflowEngine } from "./index.ts";
-import { createDomainEvent } from "@wato/sdk";
-import type { WorkflowDefinition } from "@wato/workflow-sdk";
+import { createDomainEvent } from "@wato/core";
+import type { WorkflowDefinition } from "@wato/workflow-types";
 
 test("workflow engine executes registered trigger and action", async () => {
   const engine = new WorkflowEngine();

@@ -38,7 +38,7 @@ The kernel provides:
 - module registration and lifecycle orchestration
 - capability registration and lookup
 - event publishing and subscriptions
-- account manager wiring
+- account registry wiring
 - workflow engine wiring
 - system status capability
 
@@ -48,8 +48,6 @@ SQLite-backed storage currently persists:
 
 - accounts
 - events
-- inbound messages
-- outbound messages
 - workflows
 - workflow execution records
 - webhooks
@@ -59,8 +57,8 @@ SQLite-backed storage currently persists:
 
 There are two operator interfaces:
 
-- the local HTTP API exposed by `modules/api-server`
-- the CLI in `apps/cli`, which talks to the same API through `packages/ipc`
+- the local HTTP API exposed by `modules/runtime-api`
+- the CLI in `apps/cli`, which talks to the same API through `packages/api-client`
 
 This keeps the CLI thin and ensures API and CLI capabilities evolve together.
 
@@ -68,13 +66,13 @@ This keeps the CLI thin and ensures API and CLI capabilities evolve together.
 
 Workflow processing is split across three layers:
 
-- `packages/workflow-sdk`: workflow contracts and template resolution helpers
+- `packages/workflow-types`: workflow contracts and template resolution helpers
 - `packages/workflow-engine`: trigger matching, condition evaluation, action execution, execution recording, validation
-- `modules/workflow-core`: provider registration, workflow registry capability, config/storage-backed workflow loading, event subscription
+- `modules/runtime-workflow`: provider registration, workflow registry capability, config/storage-backed workflow loading, event subscription
 
 ## Webhook architecture
 
-Webhook processing is handled by `modules/webhook-runtime` and includes:
+Webhook processing is handled by `modules/runtime-webhook` and includes:
 
 - endpoint registration
 - event filtering by type and account
@@ -85,7 +83,7 @@ Webhook processing is handled by `modules/webhook-runtime` and includes:
 
 ## WhatsApp architecture
 
-`modules/whatsapp-core` wraps `whatsapp-web.js` and exposes a typed `WhatsAppGateway` capability.
+`modules/runtime-whatsapp` wraps `whatsapp-web.js` and exposes a typed `WhatsAppGateway` capability.
 
 Current functional areas include:
 

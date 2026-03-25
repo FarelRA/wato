@@ -1,0 +1,13 @@
+{
+  "name": "@wato/runtime-api",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@wato/account-registry": "workspace:*",
+    "@wato/core": "workspace:*",
+    "@wato/workflow-types": "workspace:*"
+  }
+}

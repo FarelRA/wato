@@ -57,7 +57,7 @@ Arrays are replaced, not merged.
 ### `dataDir`
 
 - default: `./data`
-- used for runtime state, SQLite data, account sessions, and media archives
+- used for runtime state, SQLite metadata, account sessions, and media archives
 
 ### `logLevel`
 
@@ -88,7 +88,7 @@ An array of workflow definitions. See `workflows.md`.
 ### `whatsapp`
 
 - `autoInitialize`: immediately initialize enabled accounts on boot
-- `archiveMedia`: persist inbound media references and archives when available
+- `archiveMedia`: persist media files and references when available
 - `browserPath`: optional browser executable path
 - `headless`: run browser automation in headless mode
 
@@ -139,7 +139,7 @@ This sets account ids and labels, all enabled.
 
 ## Built-in default workflow
 
-If no workflows are configured or stored yet, the config layer provides a default `auto-ack` workflow that replies with a fixed text message to inbound messages.
+If no workflows are configured yet, the config layer provides a default `auto-ack` workflow that replies with a fixed text message to incoming messages.
 
 ## Notes
 

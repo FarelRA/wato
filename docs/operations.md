@@ -31,7 +31,7 @@ Expected runtime contents include:
 
 - SQLite data
 - account auth/session directories
-- archived media when enabled
+- media archives when enabled
 
 ## Build outputs
 

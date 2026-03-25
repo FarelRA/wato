@@ -2,7 +2,7 @@
 
 ## Overview
 
-The daemon exposes a local HTTP API through the Bun server in `modules/api-server`.
+The daemon exposes a local HTTP API through the Bun server in `modules/runtime-api`.
 
 Default bind:
 
@@ -38,7 +38,7 @@ Returns all account records and lifecycle state.
 
 ### `GET /messages?accountId=...`
 
-List stored inbound messages, optionally filtered by account.
+List recent live WhatsApp messages, optionally filtered by account.
 
 ### `POST /messages/send`
 

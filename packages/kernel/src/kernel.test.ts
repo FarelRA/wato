@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { Kernel } from "./index.ts";
 import { createLogger } from "@wato/logging";
-import type { WatoModule } from "@wato/sdk";
+import type { WatoModule } from "@wato/core";
 
 test("kernel exposes workflow engine capability to modules", async () => {
   let found = false;

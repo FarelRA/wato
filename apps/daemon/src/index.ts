@@ -1,15 +1,14 @@
-import { utilityActionModule } from "@wato/action-utility";
+import { actionDataModule } from "@wato/action-data";
 import { createWatoConfig } from "@wato/config";
 import { Kernel } from "@wato/kernel";
 import { createLogger } from "@wato/logging";
-import { sendMessageActionModule } from "@wato/action-send-message";
-import { apiServerModule } from "@wato/api-server";
-import { healthMonitorModule } from "@wato/health-monitor";
-import { storageArchiveModule } from "@wato/storage-archive";
-import { messageTriggerModule } from "@wato/trigger-message";
-import { webhookRuntimeModule } from "@wato/webhook-runtime";
-import { whatsappCoreModule } from "@wato/whatsapp-core";
-import { workflowCoreModule } from "@wato/workflow-core";
+import { actionMessageModule } from "@wato/action-message";
+import { runtimeApiModule } from "@wato/runtime-api";
+import { runtimeHealthModule } from "@wato/runtime-health";
+import { triggerMessageModule } from "@wato/trigger-message";
+import { runtimeWebhookModule } from "@wato/runtime-webhook";
+import { runtimeWhatsAppModule } from "@wato/runtime-whatsapp";
+import { runtimeWorkflowModule } from "@wato/runtime-workflow";
 
 let activeKernel: Kernel | undefined;
 let activeLogger = createLogger({ service: "daemon", level: "info" });
@@ -23,15 +22,14 @@ async function main(): Promise<void> {
     logger,
     config,
     modules: [
-      whatsappCoreModule,
-      storageArchiveModule,
-      workflowCoreModule,
-      messageTriggerModule,
-      utilityActionModule,
-      sendMessageActionModule,
-      webhookRuntimeModule,
-      apiServerModule,
-      healthMonitorModule
+      runtimeWhatsAppModule,
+      runtimeWorkflowModule,
+      triggerMessageModule,
+      actionDataModule,
+      actionMessageModule,
+      runtimeWebhookModule,
+      runtimeApiModule,
+      runtimeHealthModule
     ]
   });
   activeKernel = kernel;

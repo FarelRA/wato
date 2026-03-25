@@ -1,0 +1,60 @@
+{
+  "dataDir": "./data",
+  "logLevel": "info",
+  "accounts": [
+    {
+      "id": "default",
+      "label": "Default Account",
+      "enabled": true,
+      "metadata": {
+        "role": "primary"
+      }
+    }
+  ],
+  "api": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 3147
+  },
+  "workflows": [
+    {
+      "id": "auto-ack",
+      "name": "Auto acknowledge inbound message",
+      "version": 1,
+      "enabled": true,
+      "accountScope": {
+        "mode": "all"
+      },
+      "trigger": {
+        "type": "message.received",
+        "config": {
+          "contains": "wato"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "type": "message.sendText",
+          "config": {
+            "chatId": "${input.chatId}",
+            "text": "wato received your message"
+          }
+        }
+      ],
+      "policy": {
+        "errorMode": "stop"
+      }
+    }
+  ],
+  "whatsapp": {
+    "autoInitialize": true,
+    "archiveMedia": true,
+    "headless": true
+  },
+  "webhooks": {
+    "enabled": false,
+    "maxAttempts": 3,
+    "baseDelayMs": 1000,
+    "endpoints": []
+  }
+}

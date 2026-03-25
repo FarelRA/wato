@@ -1,0 +1,13 @@
+{
+  "name": "@wato/runtime-whatsapp",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@wato/account-registry": "workspace:*",
+    "@wato/core": "workspace:*",
+    "whatsapp-web.js": "^1.34.6"
+  }
+}

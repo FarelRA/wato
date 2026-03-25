@@ -1,6 +1,6 @@
-import { AccountManager, accountManagerCapability } from "@wato/account-manager";
+import { AccountRegistry, accountRegistryCapability } from "@wato/account-registry";
 import { InMemoryEventBus } from "@wato/event-bus";
-import { validateModuleGraph } from "@wato/module-loader";
+import { validateModuleDependencies } from "@wato/module-graph";
 import type {
   AccountRecord,
   CapabilityRegistry,
@@ -10,8 +10,8 @@ import type {
   ModuleRegistration,
   StorageEngine,
   WatoModule
-} from "@wato/sdk";
-import { capabilityNames } from "@wato/sdk";
+} from "@wato/core";
+import { capabilityNames } from "@wato/core";
 import { SqliteStorageEngine } from "@wato/storage-sqlite";
 import { WorkflowEngine } from "@wato/workflow-engine";
 
@@ -42,7 +42,7 @@ class InMemoryCapabilities implements CapabilityRegistry {
 export class Kernel {
   private readonly capabilities = new InMemoryCapabilities();
   private readonly eventBus = new InMemoryEventBus();
-  private readonly accountManager: AccountManager;
+  private readonly accountRegistry: AccountRegistry;
   private readonly storage: StorageEngine;
   private readonly workflowEngine: WorkflowEngine;
   private readonly registrations: Array<{ module: WatoModule; registration: ModuleRegistration }> = [];
@@ -50,11 +50,11 @@ export class Kernel {
   private status: "starting" | "ready" | "degraded" | "stopped" = "starting";
 
   constructor(private readonly options: KernelOptions) {
-    validateModuleGraph(options.modules);
-    this.accountManager = new AccountManager(options.config.accounts);
+    validateModuleDependencies(options.modules);
+    this.accountRegistry = new AccountRegistry(options.config.accounts);
     this.storage = new SqliteStorageEngine(options.config.dataDir);
     this.workflowEngine = new WorkflowEngine(this.storage);
-    this.capabilities.register(accountManagerCapability, this.accountManager);
+    this.capabilities.register(accountRegistryCapability, this.accountRegistry);
     this.capabilities.register(capabilityNames.workflowEngine, this.workflowEngine);
     this.capabilities.register(capabilityNames.storage, this.storage);
     this.capabilities.register(capabilityNames.systemController, {
@@ -63,7 +63,7 @@ export class Kernel {
         status: this.status,
         uptimeMs: Date.now() - this.startedAt,
         moduleCount: this.options.modules.length,
-        accountCount: this.accountManager.list().length
+        accountCount: this.accountRegistry.list().length
       })
     });
     this.eventBus.subscribe("*", async (event) => {
@@ -109,6 +109,6 @@ export class Kernel {
   }
 
   private syncAccounts(): void {
-    this.storage.upsertAccounts(this.accountManager.list() as AccountRecord[]);
+    this.storage.upsertAccounts(this.accountRegistry.list() as AccountRecord[]);
   }
 }

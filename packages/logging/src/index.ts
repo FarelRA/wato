@@ -1,4 +1,4 @@
-import type { Logger } from "@wato/sdk";
+import type { Logger } from "@wato/core";
 
 type LogLevel = "debug" | "info" | "warn" | "error";
 

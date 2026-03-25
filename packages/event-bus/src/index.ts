@@ -1,4 +1,4 @@
-import type { DomainEvent, EventPublisher } from "@wato/sdk";
+import type { DomainEvent, EventPublisher } from "@wato/core";
 
 type EventHandler = (event: DomainEvent<unknown>) => Promise<void> | void;
 

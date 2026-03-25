@@ -1,17 +1,17 @@
-import type { MessageEnvelope, WatoModule } from "@wato/sdk";
+import { capabilityNames, type MessageEnvelope, type WatoModule } from "@wato/core";
 import type { WorkflowEngine } from "@wato/workflow-engine";
 
-export const messageTriggerModule: WatoModule = {
+export const triggerMessageModule: WatoModule = {
   manifest: {
     name: "trigger-message",
     version: "0.1.0",
     kind: "workflow-trigger",
-    dependsOn: ["workflow-core"],
+    dependsOn: ["runtime-workflow"],
     accountScopeSupport: "cross-account"
   },
   register(context) {
-    const engine = context.capabilities.resolve<WorkflowEngine>("workflow-engine");
-    context.capabilities.resolve<{ registerTriggerType?: (type: string) => void }>("workflow-registry").registerTriggerType?.("message.received");
+    const engine = context.capabilities.resolve<WorkflowEngine>(capabilityNames.workflowEngine);
+    context.capabilities.resolve<{ registerTriggerType?: (type: string) => void }>(capabilityNames.workflowRegistry).registerTriggerType?.("message.received");
     engine.registerTrigger({
       type: "message.received",
       match: (input, config) => {

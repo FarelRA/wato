@@ -4,19 +4,18 @@
   "type": "module",
   "private": true,
   "dependencies": {
-    "@wato/account-manager": "workspace:*",
+    "@wato/account-registry": "workspace:*",
     "@wato/config": "workspace:*",
     "@wato/kernel": "workspace:*",
     "@wato/logging": "workspace:*",
-    "@wato/sdk": "workspace:*",
+    "@wato/core": "workspace:*",
     "@wato/workflow-engine": "workspace:*",
-    "@wato/action-send-message": "workspace:*",
-    "@wato/api-server": "workspace:*",
-    "@wato/health-monitor": "workspace:*",
-    "@wato/storage-archive": "workspace:*",
+    "@wato/action-message": "workspace:*",
+    "@wato/runtime-api": "workspace:*",
+    "@wato/runtime-health": "workspace:*",
     "@wato/trigger-message": "workspace:*",
-    "@wato/webhook-runtime": "workspace:*",
-    "@wato/whatsapp-core": "workspace:*",
-    "@wato/workflow-core": "workspace:*"
+    "@wato/runtime-webhook": "workspace:*",
+    "@wato/runtime-whatsapp": "workspace:*",
+    "@wato/runtime-workflow": "workspace:*"
   }
 }

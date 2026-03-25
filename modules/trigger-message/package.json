@@ -6,8 +6,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@wato/sdk": "workspace:*",
-    "@wato/workflow-sdk": "workspace:*",
+    "@wato/core": "workspace:*",
+    "@wato/workflow-types": "workspace:*",
     "@wato/workflow-engine": "workspace:*"
   }
 }

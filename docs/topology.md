@@ -7,28 +7,27 @@ apps/
   cli/
   daemon/
 packages/
-  account-manager/
-  api-contracts/
+  account-registry/
+  api-client/
+  api-types/
   config/
   event-bus/
-  ipc/
   kernel/
   logging/
-  module-loader/
-  sdk/
+  module-graph/
+  core/
   storage-sqlite/
   workflow-engine/
-  workflow-sdk/
+  workflow-types/
 modules/
-  action-send-message/
-  action-utility/
-  api-server/
-  health-monitor/
-  storage-archive/
+  action-message/
+  action-data/
+  runtime-api/
+  runtime-health/
+  runtime-webhook/
+  runtime-whatsapp/
+  runtime-workflow/
   trigger-message/
-  webhook-runtime/
-  whatsapp-core/
-  workflow-core/
 ```
 
 ## Apps
@@ -37,23 +36,22 @@ modules/
 
 Boots the kernel and loads the runtime module graph:
 
-- `whatsapp-core`
-- `storage-archive`
-- `workflow-core`
+- `runtime-whatsapp`
+- `runtime-workflow`
 - `trigger-message`
-- `action-utility`
-- `action-send-message`
-- `webhook-runtime`
-- `api-server`
-- `health-monitor`
+- `action-data`
+- `action-message`
+- `runtime-webhook`
+- `runtime-api`
+- `runtime-health`
 
 ### `apps/cli`
 
-Thin operator client that reads config, creates a local control client, and calls daemon endpoints.
+Thin operator client that reads config, creates an API client, and calls daemon endpoints.
 
 ## Packages
 
-### `packages/sdk`
+### `packages/core`
 
 Core shared contracts:
 
@@ -75,11 +73,11 @@ Config loading, env merges, defaults, and schema validation.
 
 Event subscription and publish plumbing.
 
-### `packages/account-manager`
+### `packages/account-registry`
 
 Account state and capability wiring.
 
-### `packages/module-loader`
+### `packages/module-graph`
 
 Module boot and dependency ordering support.
 
@@ -87,15 +85,15 @@ Module boot and dependency ordering support.
 
 SQLite persistence implementation.
 
-### `packages/api-contracts`
+### `packages/api-types`
 
-Response and request DTOs used by the local control client.
+Response and request DTOs used by the API client.
 
-### `packages/ipc`
+### `packages/api-client`
 
 Local API client used by the CLI.
 
-### `packages/workflow-sdk`
+### `packages/workflow-types`
 
 Workflow types, provider contracts, and workflow config interpolation helpers.
 
@@ -105,15 +103,11 @@ Workflow execution and validation engine.
 
 ## Modules
 
-### `modules/whatsapp-core`
+### `modules/runtime-whatsapp`
 
 Owns WhatsApp Web integration and exposes the typed gateway.
 
-### `modules/storage-archive`
-
-Archives inbound message data into persistence.
-
-### `modules/workflow-core`
+### `modules/runtime-workflow`
 
 Loads workflows, registers base conditions, exposes workflow registry capability, and evaluates workflows for inbound events.
 
@@ -121,7 +115,7 @@ Loads workflows, registers base conditions, exposes workflow registry capability
 
 Provides the `message.received` workflow trigger and extracts structured trigger data from message payloads.
 
-### `modules/action-utility`
+### `modules/action-data`
 
 Provides pure workflow utility actions such as:
 
@@ -129,19 +123,19 @@ Provides pure workflow utility actions such as:
 - `data.coalesce`
 - `data.assert`
 
-### `modules/action-send-message`
+### `modules/action-message`
 
 Provides workflow actions that call the WhatsApp gateway.
 
-### `modules/webhook-runtime`
+### `modules/runtime-webhook`
 
 Persists webhook endpoints, delivers outbound webhooks, retries failures, and supports replay.
 
-### `modules/api-server`
+### `modules/runtime-api`
 
 Exposes the Bun HTTP control plane.
 
-### `modules/health-monitor`
+### `modules/runtime-health`
 
 Health and readiness support.
 
@@ -149,7 +143,7 @@ Health and readiness support.
 
 Important capabilities in the runtime:
 
-- `account-manager`
+- `account-registry`
 - `workflow-engine`
 - `storage-engine`
 - `message-sender`
@@ -172,4 +166,4 @@ Important capabilities in the runtime:
 ### Runtime stores
 
 - SQLite metadata under the configured data directory
-- archived inbound media under the same data root when media archival is enabled
+- media archives under the same data root when media archival is enabled

@@ -6,9 +6,9 @@ import type {
   WorkflowCatalog,
   WorkflowDefinition,
   WorkflowExecutionContext
-} from "@wato/workflow-sdk";
-import { resolveWorkflowConfig } from "@wato/workflow-sdk";
-import type { DomainEvent, StorageEngine, WorkflowExecutionRecord } from "@wato/sdk";
+} from "@wato/workflow-types";
+import { resolveWorkflowConfig } from "@wato/workflow-types";
+import type { DomainEvent, StorageEngine, WorkflowExecutionRecord } from "@wato/core";
 
 export class WorkflowEngine implements WorkflowCatalog {
   private readonly triggers = new Map<string, TriggerProvider>();

@@ -4,9 +4,14 @@
   "type": "module",
   "private": true,
   "dependencies": {
-    "@wato/api-contracts": "workspace:*",
+    "@wato/api-types": "workspace:*",
     "@wato/config": "workspace:*",
-    "@wato/ipc": "workspace:*",
-    "@wato/workflow-engine": "workspace:*"
+    "@wato/api-client": "workspace:*",
+    "@wato/workflow-engine": "workspace:*",
+    "commander": "^14.0.3",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "@types/qrcode-terminal": "^0.12.2"
   }
 }

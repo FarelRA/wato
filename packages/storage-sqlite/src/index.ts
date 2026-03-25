@@ -4,13 +4,11 @@ import { Database } from "bun:sqlite";
 import type {
   AccountRecord,
   DomainEvent,
-  MessageEnvelope,
-  OutboundMessageRecord,
   StorageEngine,
   WebhookDefinition,
   WebhookDeliveryRecord,
   WorkflowExecutionRecord
-} from "@wato/sdk";
+} from "@wato/core";
 
 export class SqliteStorageEngine implements StorageEngine {
   private readonly db: Database;
@@ -86,73 +84,6 @@ export class SqliteStorageEngine implements StorageEngine {
       correlationId: row.correlation_id ? String(row.correlation_id) : undefined,
       payload: JSON.parse(String(row.payload_json))
     };
-  }
-
-  saveInboundMessage(message: MessageEnvelope): void {
-    this.db
-      .query(
-        `insert or replace into messages (
-          message_id, account_id, chat_id, sender, body, timestamp, from_me, has_media, media_mime_type, media_filename, raw_json
-         ) values (
-          $messageId, $accountId, $chatId, $sender, $body, $timestamp, $fromMe, $hasMedia, $mediaMimeType, $mediaFilename, $rawJson
-         )`
-      )
-      .run({
-        messageId: message.messageId,
-        accountId: message.accountId,
-        chatId: message.chatId,
-        sender: message.from,
-        body: message.body,
-        timestamp: message.timestamp,
-        fromMe: message.fromMe ? 1 : 0,
-        hasMedia: message.hasMedia ? 1 : 0,
-        mediaMimeType: message.mediaMimeType ?? null,
-        mediaFilename: message.mediaFilename ?? null,
-        rawJson: JSON.stringify(message.raw ?? null)
-      });
-  }
-
-  saveOutboundMessage(message: OutboundMessageRecord): void {
-    this.db
-      .query(
-        `insert or replace into outbound_messages (id, account_id, chat_id, text, status, created_at, error)
-         values ($id, $accountId, $chatId, $text, $status, $createdAt, $error)`
-      )
-      .run({
-        id: message.id,
-        accountId: message.accountId,
-        chatId: message.chatId,
-        text: message.text,
-        status: message.status,
-        createdAt: message.createdAt,
-        error: message.error ?? null
-      });
-  }
-
-  listMessages(accountId?: string, limit = 100): MessageEnvelope[] {
-    const query = accountId
-      ? this.db.query(
-          `select message_id, account_id, chat_id, sender, body, timestamp, from_me, has_media, media_mime_type, media_filename, raw_json
-           from messages where account_id = ? order by timestamp desc limit ?`
-        )
-      : this.db.query(
-          `select message_id, account_id, chat_id, sender, body, timestamp, from_me, has_media, media_mime_type, media_filename, raw_json
-           from messages order by timestamp desc limit ?`
-        );
-    const rows = accountId ? query.all(accountId, limit) : query.all(limit);
-    return (rows as Array<Record<string, unknown>>).map((row) => ({
-      messageId: String(row.message_id),
-      accountId: String(row.account_id),
-      chatId: String(row.chat_id),
-      from: String(row.sender),
-      body: String(row.body ?? ""),
-      timestamp: String(row.timestamp),
-      fromMe: Boolean(row.from_me),
-      hasMedia: Boolean(row.has_media),
-      mediaMimeType: row.media_mime_type ? String(row.media_mime_type) : undefined,
-      mediaFilename: row.media_filename ? String(row.media_filename) : undefined,
-      raw: row.raw_json ? (JSON.parse(String(row.raw_json)) as Record<string, unknown>) : undefined
-    }));
   }
 
   saveWorkflow(workflow: unknown): void {
@@ -350,30 +281,6 @@ export class SqliteStorageEngine implements StorageEngine {
         payload_json text not null
       );
 
-      create table if not exists messages (
-        message_id text primary key,
-        account_id text not null,
-        chat_id text not null,
-        sender text not null,
-        body text not null,
-        timestamp text not null,
-        from_me integer not null,
-        has_media integer not null,
-        media_mime_type text,
-        media_filename text,
-        raw_json text
-      );
-
-      create table if not exists outbound_messages (
-        id text primary key,
-        account_id text not null,
-        chat_id text not null,
-        text text not null,
-        status text not null,
-        created_at text not null,
-        error text
-      );
-
       create table if not exists workflows (
         id text primary key,
         version integer not null,
@@ -419,6 +326,7 @@ export class SqliteStorageEngine implements StorageEngine {
         created_at text not null,
         delivered_at text
       );
+
     `);
   }
 }

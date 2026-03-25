@@ -6,7 +6,7 @@ This page shows realistic ways to use `wato` as an automation platform.
 
 Goal:
 
-- capture inbound messages
+- process inbound WhatsApp messages in real time
 - extract ticket or order numbers
 - reply with acknowledgment
 - notify another system through webhooks

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
-import type { TriggerProvider } from "@wato/workflow-sdk";
-import type { CapabilityRegistry, MessageEnvelope, ModuleContext } from "@wato/sdk";
-import { messageTriggerModule } from "./index.ts";
+import type { TriggerProvider } from "@wato/workflow-types";
+import { capabilityNames, type CapabilityRegistry, type MessageEnvelope, type ModuleContext } from "@wato/core";
+import { triggerMessageModule } from "./index.ts";
 
 test("message trigger exposes regex groups and command parsing", () => {
   let provider: TriggerProvider | undefined;
@@ -10,7 +10,7 @@ test("message trigger exposes regex groups and command parsing", () => {
   const capabilities: CapabilityRegistry = {
     register() {},
     resolve(name) {
-      if (name === "workflow-engine") {
+      if (name === capabilityNames.workflowEngine) {
         return {
           registerTrigger(input: TriggerProvider) {
             provider = input;
@@ -18,7 +18,7 @@ test("message trigger exposes regex groups and command parsing", () => {
         } as never;
       }
 
-      if (name === "workflow-registry") {
+      if (name === capabilityNames.workflowRegistry) {
         return {
           registerTriggerType(type: string) {
             registeredType = type;
@@ -52,7 +52,7 @@ test("message trigger exposes regex groups and command parsing", () => {
     events: { async publish() {}, subscribe() { return () => {}; } }
   };
 
-  messageTriggerModule.register(context);
+  triggerMessageModule.register(context);
 
   const payload: MessageEnvelope = {
     accountId: "default",

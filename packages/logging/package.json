@@ -6,6 +6,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@wato/sdk": "workspace:*"
+    "@wato/core": "workspace:*"
   }
 }

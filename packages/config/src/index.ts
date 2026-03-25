@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import type { KernelConfig } from "@wato/sdk";
+import type { KernelConfig } from "@wato/core";
 import { z } from "zod";
 
 const workflowSchema = z.object({

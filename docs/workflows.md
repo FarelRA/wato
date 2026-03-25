@@ -129,7 +129,7 @@ Example:
 
 ## Condition providers
 
-Built-in conditions currently registered by `workflow-core`:
+Built-in conditions currently registered by `runtime-workflow`:
 
 - `message.textContains`
 - `message.from`

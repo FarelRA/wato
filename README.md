@@ -77,28 +77,27 @@ apps/
   cli/
   daemon/
 packages/
-  account-manager/
-  api-contracts/
+  account-registry/
+  api-client/
+  api-types/
   config/
   event-bus/
-  ipc/
   kernel/
   logging/
-  module-loader/
-  sdk/
+  module-graph/
+  core/
   storage-sqlite/
   workflow-engine/
-  workflow-sdk/
+  workflow-types/
 modules/
-  action-send-message/
-  action-utility/
-  api-server/
-  health-monitor/
-  storage-archive/
+  action-message/
+  action-data/
+  runtime-api/
+  runtime-health/
+  runtime-webhook/
+  runtime-whatsapp/
+  runtime-workflow/
   trigger-message/
-  webhook-runtime/
-  whatsapp-core/
-  workflow-core/
 docs/
 ```
 

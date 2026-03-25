@@ -6,6 +6,7 @@ dist/
 
 # runtime data
 data/
+.wwebjs_cache/
 
 # environment and local config overrides
 .env

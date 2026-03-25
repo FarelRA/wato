@@ -6,10 +6,10 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@wato/account-manager": "workspace:*",
+    "@wato/account-registry": "workspace:*",
     "@wato/event-bus": "workspace:*",
-    "@wato/module-loader": "workspace:*",
-    "@wato/sdk": "workspace:*",
+    "@wato/module-graph": "workspace:*",
+    "@wato/core": "workspace:*",
     "@wato/storage-sqlite": "workspace:*",
     "@wato/workflow-engine": "workspace:*"
   }

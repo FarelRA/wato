@@ -1,0 +1,13 @@
+{
+  "name": "@wato/action-data",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@wato/core": "workspace:*",
+    "@wato/workflow-types": "workspace:*",
+    "@wato/workflow-engine": "workspace:*"
+  }
+}

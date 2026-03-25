@@ -1,0 +1,12 @@
+{
+  "name": "@wato/api-client",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@wato/api-types": "workspace:*",
+    "@wato/core": "workspace:*"
+  }
+}
