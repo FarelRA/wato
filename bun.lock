@@ -17,9 +17,9 @@
       "name": "@wato/cli",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/api-contracts": "workspace:*",
+        "@wato/api-client": "workspace:*",
+        "@wato/api-types": "workspace:*",
         "@wato/config": "workspace:*",
-        "@wato/ipc": "workspace:*",
         "@wato/workflow-engine": "workspace:*",
         "commander": "^14.0.3",
         "qrcode-terminal": "^0.12.0",
@@ -32,139 +32,135 @@
       "name": "@wato/daemon",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/account-manager": "workspace:*",
-        "@wato/action-send-message": "workspace:*",
-        "@wato/api-server": "workspace:*",
+        "@wato/account-registry": "workspace:*",
+        "@wato/action-message": "workspace:*",
         "@wato/config": "workspace:*",
-        "@wato/health-monitor": "workspace:*",
+        "@wato/core": "workspace:*",
         "@wato/kernel": "workspace:*",
         "@wato/logging": "workspace:*",
-        "@wato/sdk": "workspace:*",
-        "@wato/storage-archive": "workspace:*",
+        "@wato/runtime-api": "workspace:*",
+        "@wato/runtime-health": "workspace:*",
+        "@wato/runtime-webhook": "workspace:*",
+        "@wato/runtime-whatsapp": "workspace:*",
+        "@wato/runtime-workflow": "workspace:*",
         "@wato/trigger-message": "workspace:*",
-        "@wato/webhook-runtime": "workspace:*",
-        "@wato/whatsapp-core": "workspace:*",
-        "@wato/workflow-core": "workspace:*",
         "@wato/workflow-engine": "workspace:*",
       },
     },
-    "modules/action-send-message": {
-      "name": "@wato/action-send-message",
+    "modules/action-data": {
+      "name": "@wato/action-data",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/sdk": "workspace:*",
+        "@wato/core": "workspace:*",
         "@wato/workflow-engine": "workspace:*",
-        "@wato/workflow-sdk": "workspace:*",
+        "@wato/workflow-types": "workspace:*",
       },
     },
-    "modules/action-utility": {
-      "name": "@wato/action-utility",
+    "modules/action-message": {
+      "name": "@wato/action-message",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/sdk": "workspace:*",
+        "@wato/core": "workspace:*",
         "@wato/workflow-engine": "workspace:*",
-        "@wato/workflow-sdk": "workspace:*",
+        "@wato/workflow-types": "workspace:*",
       },
     },
-    "modules/api-server": {
-      "name": "@wato/api-server",
+    "modules/runtime-api": {
+      "name": "@wato/runtime-api",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/account-manager": "workspace:*",
-        "@wato/sdk": "workspace:*",
-        "@wato/workflow-sdk": "workspace:*",
+        "@wato/account-registry": "workspace:*",
+        "@wato/core": "workspace:*",
+        "@wato/workflow-types": "workspace:*",
       },
     },
-    "modules/health-monitor": {
-      "name": "@wato/health-monitor",
+    "modules/runtime-health": {
+      "name": "@wato/runtime-health",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/sdk": "workspace:*",
+        "@wato/core": "workspace:*",
       },
     },
-    "modules/storage-archive": {
-      "name": "@wato/storage-archive",
+    "modules/runtime-webhook": {
+      "name": "@wato/runtime-webhook",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/sdk": "workspace:*",
+        "@wato/core": "workspace:*",
+      },
+    },
+    "modules/runtime-whatsapp": {
+      "name": "@wato/runtime-whatsapp",
+      "version": "0.1.0",
+      "dependencies": {
+        "@wato/account-registry": "workspace:*",
+        "@wato/core": "workspace:*",
+        "whatsapp-web.js": "^1.34.6",
+      },
+    },
+    "modules/runtime-workflow": {
+      "name": "@wato/runtime-workflow",
+      "version": "0.1.0",
+      "dependencies": {
+        "@wato/core": "workspace:*",
+        "@wato/workflow-engine": "workspace:*",
+        "@wato/workflow-types": "workspace:*",
       },
     },
     "modules/trigger-message": {
       "name": "@wato/trigger-message",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/sdk": "workspace:*",
+        "@wato/core": "workspace:*",
         "@wato/workflow-engine": "workspace:*",
-        "@wato/workflow-sdk": "workspace:*",
+        "@wato/workflow-types": "workspace:*",
       },
     },
-    "modules/webhook-runtime": {
-      "name": "@wato/webhook-runtime",
+    "packages/account-registry": {
+      "name": "@wato/account-registry",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/sdk": "workspace:*",
+        "@wato/core": "workspace:*",
       },
     },
-    "modules/whatsapp-core": {
-      "name": "@wato/whatsapp-core",
+    "packages/api-client": {
+      "name": "@wato/api-client",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/account-manager": "workspace:*",
-        "@wato/sdk": "workspace:*",
-        "whatsapp-web.js": "^1.34.6",
+        "@wato/api-types": "workspace:*",
+        "@wato/core": "workspace:*",
       },
     },
-    "modules/workflow-core": {
-      "name": "@wato/workflow-core",
-      "version": "0.1.0",
-      "dependencies": {
-        "@wato/sdk": "workspace:*",
-        "@wato/workflow-engine": "workspace:*",
-        "@wato/workflow-sdk": "workspace:*",
-      },
-    },
-    "packages/account-manager": {
-      "name": "@wato/account-manager",
-      "version": "0.1.0",
-      "dependencies": {
-        "@wato/sdk": "workspace:*",
-      },
-    },
-    "packages/api-contracts": {
-      "name": "@wato/api-contracts",
+    "packages/api-types": {
+      "name": "@wato/api-types",
       "version": "0.1.0",
     },
     "packages/config": {
       "name": "@wato/config",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/sdk": "workspace:*",
+        "@wato/core": "workspace:*",
         "zod": "^4.3.6",
       },
+    },
+    "packages/core": {
+      "name": "@wato/core",
+      "version": "0.1.0",
     },
     "packages/event-bus": {
       "name": "@wato/event-bus",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/sdk": "workspace:*",
-      },
-    },
-    "packages/ipc": {
-      "name": "@wato/ipc",
-      "version": "0.1.0",
-      "dependencies": {
-        "@wato/api-contracts": "workspace:*",
-        "@wato/sdk": "workspace:*",
+        "@wato/core": "workspace:*",
       },
     },
     "packages/kernel": {
       "name": "@wato/kernel",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/account-manager": "workspace:*",
+        "@wato/account-registry": "workspace:*",
+        "@wato/core": "workspace:*",
         "@wato/event-bus": "workspace:*",
-        "@wato/module-loader": "workspace:*",
-        "@wato/sdk": "workspace:*",
+        "@wato/module-graph": "workspace:*",
         "@wato/storage-sqlite": "workspace:*",
         "@wato/workflow-engine": "workspace:*",
       },
@@ -173,40 +169,36 @@
       "name": "@wato/logging",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/sdk": "workspace:*",
+        "@wato/core": "workspace:*",
       },
     },
-    "packages/module-loader": {
-      "name": "@wato/module-loader",
+    "packages/module-graph": {
+      "name": "@wato/module-graph",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/sdk": "workspace:*",
+        "@wato/core": "workspace:*",
       },
-    },
-    "packages/sdk": {
-      "name": "@wato/sdk",
-      "version": "0.1.0",
     },
     "packages/storage-sqlite": {
       "name": "@wato/storage-sqlite",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/sdk": "workspace:*",
+        "@wato/core": "workspace:*",
       },
     },
     "packages/workflow-engine": {
       "name": "@wato/workflow-engine",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/sdk": "workspace:*",
-        "@wato/workflow-sdk": "workspace:*",
+        "@wato/core": "workspace:*",
+        "@wato/workflow-types": "workspace:*",
       },
     },
-    "packages/workflow-sdk": {
-      "name": "@wato/workflow-sdk",
+    "packages/workflow-types": {
+      "name": "@wato/workflow-types",
       "version": "0.1.0",
       "dependencies": {
-        "@wato/sdk": "workspace:*",
+        "@wato/core": "workspace:*",
       },
     },
   },
@@ -227,51 +219,49 @@
 
     "@types/yauzl": ["@types/yauzl@2.10.3", "", { "dependencies": { "@types/node": "*" } }, "sha512-oJoftv0LSuaDZE3Le4DbKX+KS9G36NzOeSap90UIK0yMA/NhKJhqlSGtNDORNRaIbQfzjXDrQa0ytJ6mNRGz/Q=="],
 
-    "@wato/account-manager": ["@wato/account-manager@workspace:packages/account-manager"],
+    "@wato/account-registry": ["@wato/account-registry@workspace:packages/account-registry"],
 
-    "@wato/action-send-message": ["@wato/action-send-message@workspace:modules/action-send-message"],
+    "@wato/action-data": ["@wato/action-data@workspace:modules/action-data"],
 
-    "@wato/action-utility": ["@wato/action-utility@workspace:modules/action-utility"],
+    "@wato/action-message": ["@wato/action-message@workspace:modules/action-message"],
 
-    "@wato/api-contracts": ["@wato/api-contracts@workspace:packages/api-contracts"],
+    "@wato/api-client": ["@wato/api-client@workspace:packages/api-client"],
 
-    "@wato/api-server": ["@wato/api-server@workspace:modules/api-server"],
+    "@wato/api-types": ["@wato/api-types@workspace:packages/api-types"],
 
     "@wato/cli": ["@wato/cli@workspace:apps/cli"],
 
     "@wato/config": ["@wato/config@workspace:packages/config"],
 
+    "@wato/core": ["@wato/core@workspace:packages/core"],
+
     "@wato/daemon": ["@wato/daemon@workspace:apps/daemon"],
 
     "@wato/event-bus": ["@wato/event-bus@workspace:packages/event-bus"],
-
-    "@wato/health-monitor": ["@wato/health-monitor@workspace:modules/health-monitor"],
-
-    "@wato/ipc": ["@wato/ipc@workspace:packages/ipc"],
 
     "@wato/kernel": ["@wato/kernel@workspace:packages/kernel"],
 
     "@wato/logging": ["@wato/logging@workspace:packages/logging"],
 
-    "@wato/module-loader": ["@wato/module-loader@workspace:packages/module-loader"],
+    "@wato/module-graph": ["@wato/module-graph@workspace:packages/module-graph"],
 
-    "@wato/sdk": ["@wato/sdk@workspace:packages/sdk"],
+    "@wato/runtime-api": ["@wato/runtime-api@workspace:modules/runtime-api"],
 
-    "@wato/storage-archive": ["@wato/storage-archive@workspace:modules/storage-archive"],
+    "@wato/runtime-health": ["@wato/runtime-health@workspace:modules/runtime-health"],
+
+    "@wato/runtime-webhook": ["@wato/runtime-webhook@workspace:modules/runtime-webhook"],
+
+    "@wato/runtime-whatsapp": ["@wato/runtime-whatsapp@workspace:modules/runtime-whatsapp"],
+
+    "@wato/runtime-workflow": ["@wato/runtime-workflow@workspace:modules/runtime-workflow"],
 
     "@wato/storage-sqlite": ["@wato/storage-sqlite@workspace:packages/storage-sqlite"],
 
     "@wato/trigger-message": ["@wato/trigger-message@workspace:modules/trigger-message"],
 
-    "@wato/webhook-runtime": ["@wato/webhook-runtime@workspace:modules/webhook-runtime"],
-
-    "@wato/whatsapp-core": ["@wato/whatsapp-core@workspace:modules/whatsapp-core"],
-
-    "@wato/workflow-core": ["@wato/workflow-core@workspace:modules/workflow-core"],
-
     "@wato/workflow-engine": ["@wato/workflow-engine@workspace:packages/workflow-engine"],
 
-    "@wato/workflow-sdk": ["@wato/workflow-sdk@workspace:packages/workflow-sdk"],
+    "@wato/workflow-types": ["@wato/workflow-types@workspace:packages/workflow-types"],
 
     "agent-base": ["agent-base@7.1.4", "", {}, "sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ=="],
 

@@ -13,6 +13,7 @@ data/
 .env.*
 !.env.example
 !.env.sample
+wato.config.json
 
 # logs
 *.log
